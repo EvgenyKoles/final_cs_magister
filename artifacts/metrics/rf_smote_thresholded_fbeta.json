@@ -1,0 +1,34 @@
+{
+  "model": "rf",
+  "smote": {
+    "sampling_strategy": 0.9,
+    "k_neighbors": 5,
+    "seed": 42
+  },
+  "threshold_selection": {
+    "mode": "fbeta",
+    "sampling_strategy": 0.9,
+    "smote_k": 5,
+    "beta": 2.0,
+    "val_best_Fbeta": 0.5
+  },
+  "selected_threshold": 0.261,
+  "val": {
+    "Precision": 0.16666666666666666,
+    "Recall": 1.0,
+    "F1": 0.2857142857142857,
+    "PR_AUC": 0.13366666666666668,
+    "ROC_AUC": 0.8578125,
+    "Brier": 0.07804453561618782,
+    "Thr": 0.261
+  },
+  "test": {
+    "Precision": 0.047619047619047616,
+    "Recall": 0.16666666666666666,
+    "F1": 0.07407407407407407,
+    "PR_AUC": 0.07399730898725049,
+    "ROC_AUC": 0.6351706036745407,
+    "Brier": 0.06697218810361856,
+    "Thr": 0.261
+  }
+}

@@ -1,0 +1,215 @@
+1шаг python scripts/01_build_label.py --input /Users/a08406776/Documents/project/data/raw/Data_Carrard_2022_MedTeach.csv --t 27
+//
+2шаг python scripts/02_preprocess_split.py
+//
+получил слишком хорошие результаты -> удалили во 2м файле
+numeric_expected = {
+        "age","year","stud_h","psyt","jspe","qcae_cog","qcae_aff",
+        "amsp","erec_mean","cesd","stai_t"
+    }
+
+//
+
+3шаг python scripts/03_train_logreg.py
+
+//
+
+4шаг 
+python scripts/04_train_model.py --model rf
+python scripts/04_train_model.py --model xgb
+python scripts/04_train_model.py --model mlp
+
+//
+
+for info - history
+(base) a08406776@iMac-4 project % history 
+ 1017  python scripts/03_train_logreg.py
+ 1018  python scripts/03_train_logreg.py
+ 1019  python scripts/02_preprocess_split.py\n
+ 1020  python scripts/03_train_logreg.py\n
+ 1021  python scripts/04_train_model.py --model rf
+ 1022  python scripts/04_train_model.py --model xgb
+ 1023  python scripts/04_train_model.py --model mlp
+ 1024  python scripts/04_train_compare.py --model lr --thr 0.35
+ 1025  python scripts/04_train_model.py --model lr --thr 0.35
+ 1026  conda install -c conda-forge xgboost\n
+ 1027  pip install xgboost
+ 1028  python scripts/04_train_model.py --model rf
+ 1029  python scripts/04_train_model.py --model rf
+ 1030  python scripts/04_train_model.py --model xgb
+ 1031  python scripts/04_train_model.py --model mlp
+ 1032  python scripts/05_compare_models.py
+(base) a08406776@iMac-4 project % 
+
+results
+
+(base) a08406776@iMac-4 project % python scripts/05_compare_models.py
+
+=== Model comparison (sorted by test PR-AUC) ===
+                 model  test_PR_AUC  val_PR_AUC  test_Recall  val_Recall   test_F1    val_F1  test_ROC_AUC  val_ROC_AUC  test_Brier  val_Brier   thr
+1                  xgb     0.165443    0.113849     0.166667         0.0  0.250000  0.000000      0.637795     0.812500    0.048034   0.060957  0.35
+2  logistic_regression     0.164375    0.086107     0.333333         0.8  0.090909  0.142857      0.681102     0.720313    0.144343   0.179960  0.35
+3                   rf     0.099255    0.130403     0.166667         0.4  0.142857  0.148148      0.611549     0.850000    0.062397   0.072999  0.35
+4                  mlp     0.050648    0.060136     0.000000         0.0  0.000000  0.000000      0.511811     0.640625    0.062511   0.072669  0.35
+
+
+//
+change scale_pos_weight=23 in 04_train_compare 
+results
+=== Model comparison (sorted by test PR-AUC) ===
+                 model  test_PR_AUC  val_PR_AUC  test_Recall  val_Recall   test_F1    val_F1  test_ROC_AUC  val_ROC_AUC  test_Brier  val_Brier   thr
+1                  xgb     0.184831    0.112656     0.166667         0.0  0.200000  0.000000      0.656168     0.810937    0.049118   0.069157  0.35
+2  logistic_regression     0.164375    0.086107     0.333333         0.8  0.090909  0.142857      0.681102     0.720313    0.144343   0.179960  0.35
+3                   rf     0.099255    0.130403     0.166667         0.4  0.142857  0.148148      0.611549     0.850000    0.062397   0.072999  0.35
+4                  mlp     0.050648    0.060136     0.000000         0.0  0.000000  0.000000      0.511811     0.640625    0.062511   0.072669  0.35
+
+///
+
+добавили 06_threshold_search
+выполняем
+python scripts/06_threshold_search.py --model lr  --mode recall --target_recall 0.80
+python scripts/06_threshold_search.py --model rf  --mode recall --target_recall 0.80
+python scripts/06_threshold_search.py --model xgb --mode recall --target_recall 0.80
+python scripts/06_threshold_search.py --model mlp --mode recall --target_recall 0.8
+далее
+python scripts/06_threshold_search.py --model lr  --mode fbeta --beta 2.0
+
+
+появились 
+lr_thresholded_recall.json
+rf_thresholded_recall
+xgb_thresholded_recall
+mlp_thresholded_recall
+и
+xgb_thresholded_fbeta
+
+получили хрень. 
+
+///
+делаем smote, добавили 07_train_smote, 
+python scripts/07_train_smote.py --model xgb --mode fbeta --beta 2.0 --sampling_strategy 0.3
+python scripts/07_train_smote.py --model rf --mode fbeta --beta 2.0 --sampling_strategy 0.9
+
+
+получили хрень
+lr_smote_thresholded_recall
+rf_smote_thresholded_fbeta
+xgb_smote_thresholded_fbeta
+
+//
+
+заменили
+
+03_train_logreg.py
+
+вывод
+
+(base) a08406776@iMac-4 project % python scripts/03_train_logreg.py
+[INFO] Prevalence  train=0.0419  val=0.0376  test=0.0451  (AP бейзлайн ~= prevalence)
+[INFO] Best params: {'C': 0.1, 'penalty': 'l1'} | CV(AP)=0.3902
+
+=== Logistic Regression (logreg) class_weight=balanced solver=liblinear ===
+[TRAIN] PR-AUC=0.3355 | ROC-AUC=0.8786 | F1=0.1704 | Recall@0.35=0.8846 | Brier=0.1525
+[VAL  ] PR-AUC=0.1811 | ROC-AUC=0.8516 | F1=0.1515 | Recall@0.35=1.0000 | Brier=0.1871
+[TEST ] PR-AUC=0.0958 | ROC-AUC=0.6352 | F1=0.1053 | Recall@0.35=0.5000 | Brier=0.1483
+
+--- Majority baseline (always 0) ---
+[VAL  ] PR-AUC=0.0376 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0376
+[TEST ] PR-AUC=0.0451 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0451
+
+или ...................................................................................................................
+(base) a08406776@iMac-4 project % python scripts/03_train_logreg.py --penalty l2 --solver liblinear
+[INFO] Prevalence  train=0.0419  val=0.0376  test=0.0451  (AP бейзлайн ~= prevalence)
+[INFO] Best params: {'C': 0.5, 'penalty': 'l2'} | CV(AP)=0.3803
+
+=== Logistic Regression (logreg) class_weight=balanced solver=liblinear ===
+[TRAIN] PR-AUC=0.3726 | ROC-AUC=0.9120 | F1=0.2150 | Recall@0.35=0.8846 | Brier=0.1284
+[VAL  ] PR-AUC=0.1079 | ROC-AUC=0.7812 | F1=0.1379 | Recall@0.35=0.8000 | Brier=0.1775
+[TEST ] PR-AUC=0.1682 | ROC-AUC=0.6798 | F1=0.1333 | Recall@0.35=0.5000 | Brier=0.1424
+
+--- Majority baseline (always 0) ---
+[VAL  ] PR-AUC=0.0376 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0376
+[TEST ] PR-AUC=0.0451 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0451
+
+
+
+//
+
+обновил xgboost
+(base) a08406776@iMac-4 project % pip install -U xgboost
+Requirement already satisfied: xgboost in /opt/anaconda3/lib/python3.12/site-packages (3.0.4)
+Collecting xgboost
+  Downloading xgboost-3.0.5-py3-none-macosx_10_15_x86_64.whl.metadata (2.1 kB)
+Requirement already satisfied: numpy in /opt/anaconda3/lib/python3.12/site-packages (from xgboost) (1.26.4)
+Requirement already satisfied: scipy in /opt/anaconda3/lib/python3.12/site-packages (from xgboost) (1.13.1)
+Downloading xgboost-3.0.5-py3-none-macosx_10_15_x86_64.whl (2.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 15.9 MB/s eta 0:00:00
+Installing collected packages: xgboost
+  Attempting uninstall: xgboost
+    Found existing installation: xgboost 3.0.4
+    Uninstalling xgboost-3.0.4:
+      Successfully uninstalled xgboost-3.0.4
+Successfully installed xgboost-3.0.5
+(base) a08406776@iMac-4 project % 
+
+обновили 4й файл
+
+запуск
+python scripts/04_train_model.py --model rf
+python scripts/04_train_model.py --model xgb --save_probas --save_model
+1031  python scripts/04_train_model.py --model mlp
+
+выводы
+
+=== MLP ===
+[VAL ] PR-AUC=0.0962 | ROC-AUC=0.7734 | F1=0.1000 | Recall@0.35=0.2000 | Brier=0.0890
+[TEST] PR-AUC=0.0688 | ROC-AUC=0.6273 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0663
+
+=== XGB ===
+[VAL ] PR-AUC=0.1206 | ROC-AUC=0.8266 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0700
+[TEST] PR-AUC=0.1640 | ROC-AUC=0.6535 | F1=0.1818 | Recall@0.35=0.1667 | Brier=0.0503
+
+(base) a08406776@iMac-4 project % python scripts/04_train_model.py --model rf 
+[INFO] Prevalence: train=0.0419 val=0.0376 test=0.0451 (AP бейзлайн ~= prevalence)
+
+=== RF ===
+[VAL ] PR-AUC=0.1241 | ROC-AUC=0.8328 | F1=0.1000 | Recall@0.35=0.2000 | Brier=0.0635
+[TEST] PR-AUC=0.0996 | ROC-AUC=0.5827 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0554
+
+решаем настроить отдельный скрипт для  xgb
+
+создали 05_tune_xgb
+вывод
+
+=== Final XGB (from best CV config) ===
+[VAL ] PR-AUC=0.1307 | ROC-AUC=0.8516 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0502
+[TEST] PR-AUC=0.1009 | ROC-AUC=0.5853 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0507
+
+--- Majority baseline (always 0) ---
+[VAL ] PR-AUC=0.0376 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0376
+[TEST] PR-AUC=0.0451 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0451
+
+оптимизировали получили при запуске
+python scripts/05_tune_xgb.py \\n  --trials 120 --cv_folds 4 --cv_repeats 8 \\n  --agg mean_minus_std --agg_alpha 1.0 \\n  --booster_mode gbtree --spw_mode sqrt --es_rounds 0 \\n  --search_space light --train_on train \\n  --save_model --save_probas
+
+=== Final XGB (best CV config) ===
+[VAL ] PR-AUC=0.1106 | ROC-AUC=0.7937 | F1=0.1111 | Recall@0.35=0.2000 | Brier=0.0620
+[TEST] PR-AUC=0.2072 | ROC-AUC=0.6181 | F1=0.4000 | Recall@0.35=0.3333 | Brier=0.0481
+
+--- Majority baseline (always 0) ---
+[VAL ] PR-AUC=0.0376 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0376
+[TEST] PR-AUC=0.0451 | ROC-AUC=0.5000 | F1=0.0000 | Recall@0.35=0.0000 | Brier=0.0451
+
+///
+
+содаем 
+06_select_threshold.py
+Чтобы довести результат до практического вида 
+(и красиво показать в магистерской), давай отдельно и 
+честно подберём порог по кросс-валидации на train, 
+а потом оценим его на test. Я сделал тебе отдельный скрипт: 
+он читает лучший конфиг из xgb_tuning_summary.json, 
+строит out-of-fold предсказания на train (Repeated Stratified CV),
+ оптимизирует порог по Fβ (по умолчанию β=2 для приоритета recall), 
+ а затем обучает финальную модель и оценивает её на test ровно при найденном пороге.
+
