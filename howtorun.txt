@@ -213,3 +213,16 @@ python scripts/05_tune_xgb.py \\n  --trials 120 --cv_folds 4 --cv_repeats 8 \\n 
  оптимизирует порог по Fβ (по умолчанию β=2 для приоритета recall), 
  а затем обучает финальную модель и оценивает её на test ровно при найденном пороге.
 
+
+(base) a08406776@iMac-4 project % python scripts/06_select_threshold.py --beta 1.0 --cv_folds 5 --cv_repeats 5 \
+  --train_on train --save_curves
+[INFO] OOF PR-AUC on train = 0.1650
+[INFO] Best threshold by F1.0 on OOF: thr=0.185, Fβ=0.2651
+
+=== XGB with threshold selected by CV ===
+[VAL ] PR-AUC=0.1106 | F1=0.1667 | Prec@0.18=0.1053 | Recall@0.18=0.4000
+[TEST] PR-AUC=0.2072 | F1=0.2000 | Prec@0.18=0.1429 | Recall@0.18=0.3333
+
+[OK] Результаты сохранены: artifacts/metrics/xgb_thresholded_eval.json
+[OK] PR-кривые сохранены в: artifacts/metrics
+(base) a08406776@iMac-4 project % 
