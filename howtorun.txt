@@ -96,7 +96,7 @@ lr_smote_thresholded_recall
 rf_smote_thresholded_fbeta
 xgb_smote_thresholded_fbeta
 
-//
+////////////////////////тут пересмотрели
 
 заменили
 
@@ -210,8 +210,8 @@ python scripts/05_tune_xgb.py \\n  --trials 120 --cv_folds 4 --cv_repeats 8 \\n 
 а потом оценим его на test. Я сделал тебе отдельный скрипт: 
 он читает лучший конфиг из xgb_tuning_summary.json, 
 строит out-of-fold предсказания на train (Repeated Stratified CV),
- оптимизирует порог по Fβ (по умолчанию β=2 для приоритета recall), 
- а затем обучает финальную модель и оценивает её на test ровно при найденном пороге.
+оптимизирует порог по Fβ (по умолчанию β=2 для приоритета recall), 
+а затем обучает финальную модель и оценивает её на test ровно при найденном пороге.
 
 
 (base) a08406776@iMac-4 project % python scripts/06_select_threshold.py --beta 1.0 --cv_folds 5 --cv_repeats 5 \
