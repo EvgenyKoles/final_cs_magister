@@ -11,7 +11,7 @@ numeric_expected = {
 //
 
 3шаг python scripts/03_train_logreg.py
-
+запускать из porject
 //
 
 4шаг 
@@ -156,7 +156,7 @@ Successfully installed xgboost-3.0.5
 
 запуск
 python scripts/04_train_model.py --model rf
-python scripts/04_train_model.py --model xgb --save_probas --save_model
+python scripts/04_train_model.py --model xgb --save_probas
 1031  python scripts/04_train_model.py --model mlp
 
 выводы
@@ -191,6 +191,8 @@ python scripts/04_train_model.py --model xgb --save_probas --save_model
 
 оптимизировали получили при запуске
 python scripts/05_tune_xgb.py \\n  --trials 120 --cv_folds 4 --cv_repeats 8 \\n  --agg mean_minus_std --agg_alpha 1.0 \\n  --booster_mode gbtree --spw_mode sqrt --es_rounds 0 \\n  --search_space light --train_on train \\n  --save_model --save_probas
+
+python scripts/05_tune_xgb.py --trials 120 --cv_folds 4 --cv_repeats 8 --agg mean_minus_std --agg_alpha 1.0 --booster_mode gbtree --spw_mode sqrt --es_rounds 0 --search_space light --train_on train --save_model --save_probas
 
 === Final XGB (best CV config) ===
 [VAL ] PR-AUC=0.1106 | ROC-AUC=0.7937 | F1=0.1111 | Recall@0.35=0.2000 | Brier=0.0620

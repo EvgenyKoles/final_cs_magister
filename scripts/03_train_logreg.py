@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Логистическая регрессия с тюнингом по AP (PR-AUC), опциональной калибровкой и сохранением вероятностей.
-Версия устойчиво сходится (по умолчанию liblinear), подавляет ConvergenceWarning и не «спамит» предупреждениями.
+logistic regression
 """
 
 import argparse, json, pathlib, warnings
@@ -19,7 +17,7 @@ from sklearn.exceptions import ConvergenceWarning
 from joblib import dump
 
 
-# --- подавим «спам» про несходимость (мы поднимем max_iter и ослабим tol; предупреждения нам не нужны)
+# --- suppress "spam" about incompatibility (max_iter up and tol down =; we don't need warnings)
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
@@ -88,48 +86,48 @@ def save_probas(split, y_true, proba, outdir: pathlib.Path, prefix="logreg"):
 # ---------- Main ----------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--processed_dir", default="data/processed", help="папка с X_*/y_*")
-    ap.add_argument("--artifacts_dir", default="artifacts", help="куда сохранять метрики/модели/прогнозы")
+    ap.add_argument("--processed_dir", default="data/processed", help="folder с X_*/y_*")
+    ap.add_argument("--artifacts_dir", default="artifacts", help="where to save metrics/models/forecasts")
 
-    # Порог для отчёта Recall@Thr (PR-AUC всегда по вероятностям)
-    ap.add_argument("--thr", type=float, default=0.35, help="клинический порог вероятности для отчёта Recall@Thr")
+    # Threshold for Recall@Thr report (PR-AUC always on probabilities)
+    ap.add_argument("--thr", type=float, default=0.35, help="Clinical probability threshold for Recall@Thr report")
 
-    # Классовые веса
+    # Class weights
     ap.add_argument("--class_weight", default="balanced", choices=["none","balanced"],
-                    help="вес классов для LR")
+                    help="class weight for LR")
 
-    # --- ВАЖНО: по умолчанию ставим liblinear (быстрее и стабильнее на OHE), L1/L2
+    # --- !!!Iportant- by default we set liblinear (faster and more stable on OHE), L1/L2
     ap.add_argument("--solver", default="liblinear", choices=["liblinear", "saga"],
-                    help="решатель. saga даёт elasticnet, но может сходиться дольше")
+                    help="decider. saga gives elasticnet, but can match longer")
     ap.add_argument("--penalty", default="l1", choices=["l2","l1","elasticnet"],
-                    help="штраф. elasticnet доступен только при saga")
+                    help="fine. elasticnet is only available for saga")
 
-    # Сетки гиперпараметров
+    # Hypergrid
     ap.add_argument("--C_grid", default="0.05,0.1,0.2,0.5,1.0,2.0,5.0",
-                    help="список C через запятую (чем выше C, тем слабее регуляризация)")
+                    help="List C by comma (the higher the C, the weaker the regularization)")
     ap.add_argument("--l1_grid", default="0.1,0.3,0.5",
-                    help="список l1_ratio через запятую (только для elasticnet+saga)")
-    ap.add_argument("--cv_folds", type=int, default=5, help="число фолдов для GridSearchCV")
+                    help="l1_ratio comma list (elasticnet+saga only)")
+    ap.add_argument("--cv_folds", type=int, default=5, help="number of shares for GridSearchCV")
 
-    # Устойчивость сходимости
-    ap.add_argument("--max_iter", type=int, default=10000, help="максимум итераций для LR")
-    ap.add_argument("--tol", type=float, default=1e-3, help="критерий остановки (чем больше, тем раньше стоп)")
+    # Convergence resistance
+    ap.add_argument("--max_iter", type=int, default=10000, help="maximum iterations for LR")
+    ap.add_argument("--tol", type=float, default=1e-3, help="stop criterion (the more, the earlier you stop)")
 
-    # Калибровка вероятностей
-    ap.add_argument("--calibrate", action="store_true", help="включить isotonic-калибровку (CalibratedClassifierCV)")
-    ap.add_argument("--cal_cv_folds", type=int, default=3, help="фолды для внутренней CV в калибровке")
+    # Probability calibration
+    ap.add_argument("--calibrate", action="store_true", help="enable isotonic calibration (CalibratedClassifierCV)")
+    ap.add_argument("--cal_cv_folds", type=int, default=3, help="Internal CV calibrations")
 
     # Сохранение вероятностей
-    ap.add_argument("--save_probas", action="store_true", help="сохранять proba для train/val/test")
+    ap.add_argument("--save_probas", action="store_true", help="save proba for train/val/test")
 
     args = ap.parse_args()
 
     # --- load data
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_xy(args.processed_dir)
 
-    # --- prevalence (AP бейзлайн)
+    # --- prevalence 
     prev_train, prev_val, prev_test = prevalence(y_train), prevalence(y_val), prevalence(y_test)
-    print(f"[INFO] Prevalence  train={prev_train:.4f}  val={prev_val:.4f}  test={prev_test:.4f}  (AP бейзлайн ~= prevalence)")
+    print(f"[INFO] Prevalence  train={prev_train:.4f}  val={prev_val:.4f}  test={prev_test:.4f}  (AP Line ~= prevalence)")
 
     # --- build param grid
     C_list = [float(x) for x in args.C_grid.split(",") if x.strip()]
@@ -139,12 +137,12 @@ def main():
     penalty = args.penalty
 
     if solver == "liblinear":
-        # liblinear поддерживает l1/l2; elasticnet не поддерживается — переключим на l2, если вдруг выбрали
+        # liblinear supports l1/l2; elasticnet is not supported - switch to l2 if selected
         if penalty == "elasticnet":
             penalty = "l2"
         param_grid["penalty"] = [penalty] if penalty in ("l1", "l2") else ["l2"]
     else:
-        # saga: поддерживает l1/l2/elasticnet
+        # saga: supports l1/l2/elasticnet
         param_grid["penalty"] = [penalty]
         if penalty == "elasticnet":
             l1_list = [float(x) for x in args.l1_grid.split(",") if x.strip()]
@@ -154,12 +152,12 @@ def main():
 
     base_lr = LogisticRegression(
         solver=solver,
-        penalty=("l2" if penalty == "elasticnet" else penalty),  # реальный penalty уточнит GridSearch
+        penalty=("l2" if penalty == "elasticnet" else penalty),
         class_weight=cw,
         max_iter=args.max_iter,
         tol=args.tol,
         random_state=42,
-        n_jobs=None  # держим совместимость разных версий sklearn
+        n_jobs=None  
     )
 
     # --- grid search by AP
@@ -167,18 +165,18 @@ def main():
     gs = GridSearchCV(
         estimator=base_lr,
         param_grid=param_grid,
-        scoring="average_precision",  # оптимизируем PR-AUC
+        scoring="average_precision",  # optimized PR-AUC
         cv=cv,
         n_jobs=-1,
         refit=True,
         verbose=0,
-        error_score="raise"  # если что-то реально сломалось — выкинем исключение, но ConvergenceWarning уже подавлен
+        error_score="raise"  # exeption
     )
     gs.fit(X_train, y_train)
     clf = gs.best_estimator_
     print(f"[INFO] Best params: {gs.best_params_} | CV(AP)={gs.best_score_:.4f}")
 
-    # --- optional calibration (fit на train без утечки)
+    # --- optional calibration
     if args.calibrate:
         cal = CalibratedClassifierCV(clf, method="isotonic", cv=args.cal_cv_folds)
         cal.fit(X_train, y_train)
@@ -195,7 +193,7 @@ def main():
         proba_val   = clf_final.predict_proba(X_val)[:, 1]
         proba_test  = clf_final.predict_proba(X_test)[:, 1]
     else:
-        # fallback (на всякий случай)
+        # fallback
         def _scores2proba(scores):
             r = scores.argsort().argsort().astype(float)
             return r / (len(r) - 1 + 1e-9)
@@ -262,8 +260,8 @@ def main():
         }
     }
     (artifacts/"metrics"/"logreg_eval.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
-    print(f"\n[OK] Метрики сохранены: {artifacts/'metrics'/'logreg_eval.json'}")
-    print(f"[OK] Модель сохранена:  {model_path}")
+    print(f"\n[OK] metrics saved: {artifacts/'metrics'/'logreg_eval.json'}")
+    print(f"[OK] model saved:  {model_path}")
 
 if __name__ == "__main__":
     main()

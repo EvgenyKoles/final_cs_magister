@@ -1,15 +1,6 @@
-# -*- coding: utf-8 -*-
+
 """
-04_train_model.py
-Единый скрипт обучения LR / RF / XGB / MLP с честной оценкой на val/test.
-Особенности:
-- XGBoost: eval_metric='aucpr', попытка early_stopping по валидке; если версия xgboost не поддерживает,
-  делаем фоллбэк без early stopping.
-- RF: адекватные дефолты для дисбаланса.
-- MLP: учитываем дисбаланс через sample_weight; если версия sklearn не поддерживает sample_weight,
-  выполняем мягкий апсемплинг класса 1 до заданной целевой доли (по умолчанию ~25%).
-  Есть простой перебор гиперпараметров по валидке с целевой метрикой AP (PR-AUC).
-- Сохраняем метрики в JSON, по флагу сохраняем вероятности.
+Single LR/RF/XGB/MLP training script with fair evaluation on val/test.
 """
 
 import argparse, json, pathlib
@@ -24,7 +15,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support, brier_score_loss
 )
 
-# xgboost (установлен?)
+# xgboost
 try:
     import xgboost as xgb
     from xgboost import XGBClassifier
@@ -80,15 +71,15 @@ def neg_pos_ratio(y):
 
 def upsample_to_target(X, y, target_frac=0.25, seed=42, k_cap=20):
     """
-    Дублирует класс 1 так, чтобы доля позитивов стала ~ target_frac (<=0.5).
-    Возвращает X_up, y_up (перемешанные).
+    Duplicates class 1 so that the positive portion becomes~ target_frac (<=0.5).
+    returned X_up, y_up.
     """
     y = np.asarray(y).astype(int)
     pos = int(y.sum()); neg = int(len(y) - pos)
     if pos == 0:
         return X, y
     tf = float(np.clip(target_frac, 0.05, 0.5))
-    # найти k: prevalence' = pos*k / (neg + pos*k) ~= tf  =>  k = tf*neg / (pos*(1-tf))
+    # find k: prevalence' = pos*k / (neg + pos*k) ~= tf  =>  k = tf*neg / (pos*(1-tf))
     k = int(np.ceil((tf * neg) / (pos * (1.0 - tf))))
     k = int(np.clip(k, 1, k_cap))
     if k <= 1:
@@ -123,10 +114,10 @@ def get_model(name, y_train=None, seed=42):
         )
     if name == "xgb":
         if not HAS_XGB:
-            raise RuntimeError("xgboost не установлен. Установи пакет xgboost.")
+            raise RuntimeError("xgboost didn't install.")
         spw, neg, pos = neg_pos_ratio(y_train)
         return XGBClassifier(
-            n_estimators=3000,            # много деревьев + (если получится) early stopping остановит раньше
+            n_estimators=3000,            
             learning_rate=0.02,
             max_depth=3,
             min_child_weight=1,
@@ -161,7 +152,7 @@ def get_model(name, y_train=None, seed=42):
             max_iter=10000,
             random_state=seed
         )
-    raise ValueError("Неизвестная модель: " + name)
+    raise ValueError("model not found: " + name)
 
 
 # ---------- Train/Eval ----------
@@ -174,30 +165,30 @@ def main():
     ap.add_argument("--save_probas", action="store_true")
     ap.add_argument("--seed", type=int, default=42)
 
-    # Настройки (и мини-грид) для MLP
-    ap.add_argument("--mlp_search", action="store_true", help="перебор небольшой сетки гиперпараметров MLP по валидке (скoring=AP)")
+    # settings
+    ap.add_argument("--mlp_search", action="store_true", help="Overhauling a small MLP hyperparameter grid by the prefix (skoring=AP)")
     ap.add_argument("--mlp_layers_grid", default="128,64;64,32;64;32",
-                    help="варианты слоёв через ';' (пример: '128,64;64,32;64;32')")
+                    help="layers through ';' (example: '128,64;64,32;64;32')")
     ap.add_argument("--mlp_alpha_grid", default="0.0001,0.0003,0.001,0.003",
-                    help="варианты alpha через запятую")
+                    help="alpha options with a comma")
     ap.add_argument("--mlp_lr_grid", default="0.001,0.003",
-                    help="варианты learning_rate_init через запятую")
+                    help="options learning_rate_init by comma")
     ap.add_argument("--mlp_target_pos_frac", type=float, default=0.25,
-                    help="целевая доля позитивов после апсемплинга (при отсутствии sample_weight)")
+                    help="target percentage of positives after sampling (when sample_weight is absent)")
 
     args = ap.parse_args()
 
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_xy(args.processed_dir)
 
     prev_tr, prev_va, prev_te = prevalence(y_train), prevalence(y_val), prevalence(y_test)
-    print(f"[INFO] Prevalence: train={prev_tr:.4f} val={prev_va:.4f} test={prev_te:.4f} (AP бейзлайн ~= prevalence)")
+    print(f"[INFO] Prevalence: train={prev_tr:.4f} val={prev_va:.4f} test={prev_te:.4f} (AP baseline ~= prevalence)")
 
     model = get_model(args.model, y_train=y_train, seed=args.seed)
 
-    # --- fit (с особенностями по моделям) ---
+    # --- fit (Model-specific) ---
     if args.model == "xgb":
         eval_set = [(X_train, y_train), (X_val, y_val)]
-        # Пытаемся использовать early stopping (если версия xgboost поддерживает этот аргумент в fit)
+        # try to use early stopping 
         try:
             model.fit(
                 X_train, y_train,
@@ -206,7 +197,7 @@ def main():
                 early_stopping_rounds=200
             )
         except TypeError:
-            print("[WARN] Эта версия xgboost не поддерживает early_stopping_rounds. Обучаю без early stopping.")
+            print("[WARN] This version does not support xgboost early_stopping_rounds. Teach without early stopping.")
             model.set_params(n_estimators=800)
             model.fit(
                 X_train, y_train,
@@ -215,7 +206,7 @@ def main():
             )
 
     elif args.model == "mlp":
-        # Если просили мини-грид — перебираем гиперпараметры по валидке с метрикой AP.
+        # Cross-reference hyperparameters with AP metric.
         def parse_layers_grid(s):
             outs = []
             for part in s.split(";"):
@@ -247,7 +238,7 @@ def main():
                 w[y_train == 1] = spw  # веса ~ neg/pos
                 m.fit(X_train, y_train, sample_weight=w)
             except TypeError:
-                # мягкий апсемплинг до целевой доли
+                # soft upsampling to target share
                 Xb, yb = upsample_to_target(X_train, y_train, target_frac=args.mlp_target_pos_frac, seed=args.seed)
                 m.fit(Xb, yb)
             return m
@@ -270,7 +261,7 @@ def main():
             print(f"[MLP-SEARCH] tried={tried} | best val AP={best_ap:.4f}")
             model = best
         else:
-            # одна базовая конфигурация (как раньше)
+            # one basic configuration 
             spw, neg, pos = neg_pos_ratio(y_train)
             try:
                 w = np.ones_like(y_train, dtype=float)
@@ -278,12 +269,12 @@ def main():
                 model.fit(X_train, y_train, sample_weight=w)
             except TypeError:
                 Xb, yb = upsample_to_target(X_train, y_train, target_frac=args.mlp_target_pos_frac, seed=args.seed)
-                print(f"[WARN] MLPClassifier.fit(sample_weight=...) не поддерживается. "
-                      f"Апсемплю класс 1 до доли ~{args.mlp_target_pos_frac:.2f} (после апсемплинга N={len(yb)}).")
+                print(f"[WARN] MLPClassifier.fit(sample_weight=...) does not support. "
+                      f"Up to class 1 ~{args.mlp_target_pos_frac:.2f} (after upload N={len(yb)}).")
                 model.fit(Xb, yb)
 
     else:
-        # RF/LR — обычный fit (class_weight уже задан где нужно)
+        # RF/LR
         model.fit(X_train, y_train)
 
     # --- predict proba ---
@@ -291,7 +282,7 @@ def main():
         proba_val  = model.predict_proba(X_val)[:, 1]
         proba_test = model.predict_proba(X_test)[:, 1]
     else:
-        # fallback для моделей без predict_proba
+        # fallback 
         scores_val  = model.decision_function(X_val)
         scores_test = model.decision_function(X_test)
         r_val  = scores_val.argsort().argsort().astype(float);  proba_val  = r_val  / (len(r_val)  - 1 + 1e-9)
@@ -330,9 +321,9 @@ def main():
         pd.DataFrame({"y": y_val, "proba": proba_val}).to_csv(prob_dir/f"{args.model}_val.csv", index=False)
         pd.DataFrame({"y": y_test, "proba": proba_test}).to_csv(prob_dir/f"{args.model}_test.csv", index=False)
 
-    print(f"\n[OK] Метрики сохранены: {metrics_path}")
+    print(f"\n[OK] metrics saved: {metrics_path}")
     if args.save_probas:
-        print(f"[OK] Вероятности сохранены в: {out_dir/'probas'}")
+        print(f"[OK] Probabilities saved in: {out_dir/'probas'}")
 
 
 if __name__ == "__main__":
