@@ -29,7 +29,7 @@
   },
   "artifacts": {
     "preds_saved": true,
-    "model_path": null,
+    "model_path": "artifacts/models/xgb.joblib",
     "importances_path": "artifacts/interpretability/xgb_importances.csv"
   }
 }

@@ -1,4 +1,4 @@
-Hypothesis,alpha,topk_for_importance,Status,Evidence
-"H1 (CES-D+, STAI-T+)",0.05,10,Partially,"CES-D sig+=True, topk=True; STAI-T sig+=False, topk=True"
-"H2 (Workload+, Employment+)",0.05,10,Not,"Workload sig+=False, topk=True; Employment sig+=False, topk=False"
-"H3 (AMSP−, MBI-Efficacy−)",0.05,10,Not,"AMSP sig−=False, topk=True; Efficacy sig−=False, topk=False"
+Hypothesis,alpha,topk_for_importance,Status
+"H1 (CES-D+, STAI-T+)",0.05,10,Supported
+"H2 (Workload+, Employment+)",0.05,10,Partially
+"H3 (AMSP−, MBI-Efficacy−)",0.05,10,Partially
