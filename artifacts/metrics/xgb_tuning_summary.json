@@ -17,8 +17,7 @@
     "booster": "gbtree",
     "rate_drop": 0.0,
     "skip_drop": 0.0,
-    "spw_mode": "sqrt",
-    "es_rounds": 0
+    "spw_mode": "sqrt"
   },
   "final_train_on": "train",
   "val_metrics": {
@@ -26,7 +25,6 @@
     "ROC_AUC": 0.79375,
     "F1": 0.1111111111111111,
     "Recall@Thr": 0.2,
-    "Brier": 0.06199221692257758,
     "Thr": 0.35
   },
   "test_metrics": {
@@ -34,23 +32,6 @@
     "ROC_AUC": 0.6181102362204725,
     "F1": 0.4,
     "Recall@Thr": 0.3333333333333333,
-    "Brier": 0.04809912768992131,
-    "Thr": 0.35
-  },
-  "baseline_val": {
-    "PR_AUC": 0.03759398496240601,
-    "ROC_AUC": 0.5,
-    "F1": 0.0,
-    "Recall@Thr": 0.0,
-    "Brier": 0.03759398496240601,
-    "Thr": 0.35
-  },
-  "baseline_test": {
-    "PR_AUC": 0.045112781954887216,
-    "ROC_AUC": 0.5,
-    "F1": 0.0,
-    "Recall@Thr": 0.0,
-    "Brier": 0.045112781954887216,
     "Thr": 0.35
   },
   "xgboost_version": "3.0.5"

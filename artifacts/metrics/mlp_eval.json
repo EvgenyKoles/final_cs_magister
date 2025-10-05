@@ -1,0 +1,35 @@
+{
+  "model": "mlp",
+  "threshold_for_report": 0.35,
+  "prevalence": {
+    "train": 0.041935483870967745,
+    "val": 0.03759398496240601,
+    "test": 0.045112781954887216
+  },
+  "train": {
+    "PR_AUC": 0.09749870257477354,
+    "ROC_AUC": 0.5978373478373478,
+    "F1": 0.099644128113879,
+    "Recall@Thr": 0.5384615384615384,
+    "Thr": 0.35
+  },
+  "val": {
+    "PR_AUC": 0.11556317895940539,
+    "ROC_AUC": 0.7125,
+    "F1": 0.07017543859649122,
+    "Recall@Thr": 0.4,
+    "Thr": 0.35
+  },
+  "test": {
+    "PR_AUC": 0.1386063431517977,
+    "ROC_AUC": 0.7375328083989503,
+    "F1": 0.18867924528301888,
+    "Recall@Thr": 0.8333333333333334,
+    "Thr": 0.35
+  },
+  "artifacts": {
+    "preds_saved": true,
+    "model_path": "artifacts/models/mlp.joblib",
+    "importances_path": null
+  }
+}

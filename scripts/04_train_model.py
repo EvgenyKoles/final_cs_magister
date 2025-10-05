@@ -1,31 +1,27 @@
-
+# -*- coding: utf-8 -*-
 """
-Single LR/RF/XGB/MLP training script with fair evaluation on val/test.
+04_train_model.py
+Unified trainer for RF / MLP (/ optional XGB baseline):
+- Saves probabilities for train/val/test (needed for RQ1 and threshold selection in 06).
+- Saves minimal metrics JSON (PR-AUC, ROC-AUC, F1, Recall@Thr).
+- Saves feature importances where applicable (RF/XGB) for RQ2.
 """
 
-import argparse, json, pathlib
+import argparse, json, pathlib, warnings
 import numpy as np
 import pandas as pd
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     average_precision_score, roc_auc_score, f1_score,
-    precision_recall_fscore_support, brier_score_loss
+    precision_recall_fscore_support
 )
+from sklearn.exceptions import ConvergenceWarning
+from joblib import dump
 
-# xgboost
-try:
-    import xgboost as xgb
-    from xgboost import XGBClassifier
-    HAS_XGB = True
-except Exception:
-    HAS_XGB = False
-
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # ---------- IO ----------
-def load_xy(processed_dir):
+def load_xy(processed_dir: str):
     p = pathlib.Path(processed_dir)
     X_train = np.loadtxt(p/"X_train.csv", delimiter=",")
     X_val   = np.loadtxt(p/"X_val.csv",   delimiter=",")
@@ -33,298 +29,175 @@ def load_xy(processed_dir):
     y_train = np.loadtxt(p/"y_train.csv", delimiter=",", skiprows=1).astype(int)
     y_val   = np.loadtxt(p/"y_val.csv",   delimiter=",", skiprows=1).astype(int)
     y_test  = np.loadtxt(p/"y_test.csv",  delimiter=",", skiprows=1).astype(int)
-
-    assert X_train.shape[0] == y_train.shape[0], f"Mismatch train: {X_train.shape[0]} vs {y_train.shape[0]}"
-    assert X_val.shape[0]   == y_val.shape[0],   f"Mismatch val: {X_val.shape[0]} vs {y_val.shape[0]}"
-    assert X_test.shape[0]  == y_test.shape[0],  f"Mismatch test: {X_test.shape[0]} vs {y_test.shape[0]}"
+    assert X_train.shape[0]==y_train.shape[0] and X_val.shape[0]==y_val.shape[0] and X_test.shape[0]==y_test.shape[0]
     return (X_train, y_train), (X_val, y_val), (X_test, y_test)
 
+def try_load_feature_names(processed_dir: str, n_features: int):
+    path = pathlib.Path(processed_dir) / "feature_names.csv"
+    if path.exists():
+        try:
+            df = pd.read_csv(path, header=None)
+            names = df.iloc[:, 0].astype(str).tolist()
+            if len(names) == n_features:
+                return names
+        except Exception:
+            pass
+    return [f"f{i}" for i in range(n_features)]
 
-# ---------- Utils & Metrics ----------
-def prevalence(y):
-    y = np.asarray(y).astype(int)
-    return float(y.mean()) if y.size else float("nan")
+def save_probas(split, y_true, proba, outdir: pathlib.Path, prefix: str):
+    outdir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"y": y_true, "proba": proba}).to_csv(outdir / f"{prefix}_{split}.csv", index=False)
 
-def compute_metrics(y_true, proba, thr):
-    y_hat = (proba >= thr).astype(int)
+# ---------- Metrics ----------
+def compute_metrics(y_true, y_hat, proba, thr):
     if len(np.unique(y_true)) > 1:
         pr_auc = average_precision_score(y_true, proba)
         roc    = roc_auc_score(y_true, proba)
     else:
         pr_auc, roc = float("nan"), float("nan")
-    f1     = f1_score(y_true, y_hat, zero_division=0)
+    f1 = f1_score(y_true, y_hat, zero_division=0)
     prec, rec, _, _ = precision_recall_fscore_support(y_true, y_hat, zero_division=0, average=None)
     recall_pos = float(rec[1]) if len(rec) > 1 else 0.0
-    brier = brier_score_loss(y_true, proba)
-    return {"PR_AUC": float(pr_auc), "ROC_AUC": float(roc), "F1": float(f1),
-            "Recall@Thr": recall_pos, "Brier": float(brier), "Thr": float(thr)}
+    return {"PR_AUC": float(pr_auc), "ROC_AUC": float(roc), "F1": float(f1), "Recall@Thr": recall_pos, "Thr": float(thr)}
 
-def majority_metrics(y_true, thr):
-    proba = np.zeros_like(y_true, dtype=float)
-    return compute_metrics(y_true, proba, thr)
+def evaluate_from_proba(y_true, proba, thr):
+    y_hat = (proba >= thr).astype(int)
+    return compute_metrics(y_true, y_hat, proba, thr)
 
-def neg_pos_ratio(y):
+def prevalence(y):
     y = np.asarray(y).astype(int)
-    pos = y.sum()
-    neg = len(y) - pos
-    return (neg / max(pos, 1)), int(neg), int(pos)
+    return float(y.mean()) if y.size else float("nan")
 
-def upsample_to_target(X, y, target_frac=0.25, seed=42, k_cap=20):
-    """
-    Duplicates class 1 so that the positive portion becomes~ target_frac (<=0.5).
-    returned X_up, y_up.
-    """
-    y = np.asarray(y).astype(int)
-    pos = int(y.sum()); neg = int(len(y) - pos)
-    if pos == 0:
-        return X, y
-    tf = float(np.clip(target_frac, 0.05, 0.5))
-    # find k: prevalence' = pos*k / (neg + pos*k) ~= tf  =>  k = tf*neg / (pos*(1-tf))
-    k = int(np.ceil((tf * neg) / (pos * (1.0 - tf))))
-    k = int(np.clip(k, 1, k_cap))
-    if k <= 1:
-        return X, y
-
-    X_pos = X[y == 1]; y_pos = y[y == 1]
-    X_neg = X[y == 0]; y_neg = y[y == 0]
-
-    X_pos_up = np.repeat(X_pos, repeats=k, axis=0)
-    y_pos_up = np.repeat(y_pos, repeats=k, axis=0)
-
-    Xb = np.vstack([X_neg, X_pos_up])
-    yb = np.hstack([y_neg, y_pos_up])
-
-    rng = np.random.RandomState(seed)
-    idx = rng.permutation(len(yb))
-    return Xb[idx], yb[idx]
-
-
-# ---------- Model Factory ----------
-def get_model(name, y_train=None, seed=42):
+# ---------- Models ----------
+def build_model(name: str, y_train):
     name = name.lower()
     if name == "rf":
-        return RandomForestClassifier(
-            n_estimators=800,
-            max_depth=12,
-            min_samples_leaf=5,
-            max_features="sqrt",
-            class_weight="balanced_subsample",
-            n_jobs=-1,
-            random_state=seed
+        from sklearn.ensemble import RandomForestClassifier
+        # balanced_subsample — хороший дефолт под дисбаланс
+        return "rf", RandomForestClassifier(
+            n_estimators=500, max_depth=None, min_samples_leaf=1,
+            n_jobs=-1, random_state=42, class_weight="balanced_subsample"
         )
-    if name == "xgb":
-        if not HAS_XGB:
-            raise RuntimeError("xgboost didn't install.")
-        spw, neg, pos = neg_pos_ratio(y_train)
-        return XGBClassifier(
-            n_estimators=3000,            
-            learning_rate=0.02,
-            max_depth=3,
-            min_child_weight=1,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            reg_alpha=0.0,
-            reg_lambda=1.0,
-            objective="binary:logistic",
-            eval_metric="aucpr",
-            scale_pos_weight=spw,
-            random_state=seed,
-            tree_method="hist",
-            n_jobs=-1
+    elif name == "mlp":
+        from sklearn.neural_network import MLPClassifier
+        return "mlp", MLPClassifier(
+            hidden_layer_sizes=(64, 32), activation="relu",
+            alpha=1e-4, learning_rate_init=1e-3, max_iter=500,
+            early_stopping=True, n_iter_no_change=20, random_state=42
         )
-    if name == "mlp":
-        return MLPClassifier(
-            hidden_layer_sizes=(128, 64),
-            activation="relu",
-            alpha=1e-4,
-            learning_rate_init=1e-3,
-            batch_size=64,
-            max_iter=2000,
-            early_stopping=True,
-            n_iter_no_change=30,
-            random_state=seed
+    elif name == "xgb":
+        try:
+            import xgboost as xgb
+        except Exception as e:
+            raise RuntimeError("xgboost is not installed. Use RF/MLP here and tune XGB via 05_tune_xgb.py") from e
+        # простой бейзлайн XGB; полноценный тюнинг — в 05
+        scale_pos_weight = (len(y_train) - int(sum(y_train))) / max(int(sum(y_train)), 1)
+        return "xgb", xgb.XGBClassifier(
+            n_estimators=400, learning_rate=0.05, max_depth=4,
+            subsample=0.9, colsample_bytree=0.8,
+            reg_lambda=1.0, reg_alpha=0.0,
+            objective="binary:logistic", eval_metric="logloss",
+            n_jobs=-1, random_state=42, tree_method="hist",
+            scale_pos_weight=scale_pos_weight
         )
-    if name == "lr":
-        return LogisticRegression(
-            solver="liblinear",
-            penalty="l2",
-            class_weight="balanced",
-            max_iter=10000,
-            random_state=seed
-        )
-    raise ValueError("model not found: " + name)
+    else:
+        raise ValueError(f"Unknown model: {name}. Use one of: rf, mlp, xgb")
 
-
-# ---------- Train/Eval ----------
+# ---------- Main ----------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", required=True, choices=["lr","rf","xgb","mlp"])
     ap.add_argument("--processed_dir", default="data/processed")
     ap.add_argument("--artifacts_dir", default="artifacts")
-    ap.add_argument("--thr", type=float, default=0.35)
+    ap.add_argument("--model", default="rf", choices=["rf", "mlp", "xgb"])
+    ap.add_argument("--thr", type=float, default=0.35, help="probability threshold for Recall/F1 print (final thresholds chosen in 06)")
     ap.add_argument("--save_probas", action="store_true")
-    ap.add_argument("--seed", type=int, default=42)
-
-    # settings
-    ap.add_argument("--mlp_search", action="store_true", help="Overhauling a small MLP hyperparameter grid by the prefix (skoring=AP)")
-    ap.add_argument("--mlp_layers_grid", default="128,64;64,32;64;32",
-                    help="layers through ';' (example: '128,64;64,32;64;32')")
-    ap.add_argument("--mlp_alpha_grid", default="0.0001,0.0003,0.001,0.003",
-                    help="alpha options with a comma")
-    ap.add_argument("--mlp_lr_grid", default="0.001,0.003",
-                    help="options learning_rate_init by comma")
-    ap.add_argument("--mlp_target_pos_frac", type=float, default=0.25,
-                    help="target percentage of positives after sampling (when sample_weight is absent)")
-
+    ap.add_argument("--save_model", action="store_true")
     args = ap.parse_args()
 
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_xy(args.processed_dir)
+    feature_names = try_load_feature_names(args.processed_dir, X_train.shape[1])
 
-    prev_tr, prev_va, prev_te = prevalence(y_train), prevalence(y_val), prevalence(y_test)
-    print(f"[INFO] Prevalence: train={prev_tr:.4f} val={prev_va:.4f} test={prev_te:.4f} (AP baseline ~= prevalence)")
+    model_tag, clf = build_model(args.model, y_train)
 
-    model = get_model(args.model, y_train=y_train, seed=args.seed)
+    clf.fit(X_train, y_train)
 
-    # --- fit (Model-specific) ---
-    if args.model == "xgb":
-        eval_set = [(X_train, y_train), (X_val, y_val)]
-        # try to use early stopping 
+    # predict probabilities
+    if hasattr(clf, "predict_proba"):
+        proba_train = clf.predict_proba(X_train)[:, 1]
+        proba_val   = clf.predict_proba(X_val)[:, 1]
+        proba_test  = clf.predict_proba(X_test)[:, 1]
+    else:
+        scores = clf.decision_function(X_train); r = scores.argsort().argsort().astype(float); proba_train = r/(len(r)-1+1e-9)
+        scores = clf.decision_function(X_val);   r = scores.argsort().argsort().astype(float); proba_val   = r/(len(r)-1+1e-9)
+        scores = clf.decision_function(X_test);  r = scores.argsort().argsort().astype(float); proba_test  = r/(len(r)-1+1e-9)
+
+    # metrics
+    m_train = evaluate_from_proba(y_train, proba_train, args.thr)
+    m_val   = evaluate_from_proba(y_val,   proba_val,   args.thr)
+    m_test  = evaluate_from_proba(y_test,  proba_test,  args.thr)
+
+    print(f"\n=== {model_tag.upper()} ===")
+    print(f"[TRAIN] PR-AUC={m_train['PR_AUC']:.4f} | ROC-AUC={m_train['ROC_AUC']:.4f} | F1={m_train['F1']:.4f} | Recall@{args.thr:.2f}={m_train['Recall@Thr']:.4f}")
+    print(f"[VAL  ] PR-AUC={m_val['PR_AUC']:.4f} | ROC-AUC={m_val['ROC_AUC']:.4f} | F1={m_val['F1']:.4f} | Recall@{args.thr:.2f}={m_val['Recall@Thr']:.4f}")
+    print(f"[TEST ] PR-AUC={m_test['PR_AUC']:.4f} | ROC-AUC={m_test['ROC_AUC']:.4f} | F1={m_test['F1']:.4f} | Recall@{args.thr:.2f}={m_test['Recall@Thr']:.4f}")
+
+    # dirs
+    artifacts = pathlib.Path(args.artifacts_dir)
+    (artifacts/"metrics").mkdir(parents=True, exist_ok=True)
+    (artifacts/"preds").mkdir(parents=True, exist_ok=True)
+    (artifacts/"interpretability").mkdir(parents=True, exist_ok=True)
+    (artifacts/"models").mkdir(parents=True, exist_ok=True)
+
+    # save probas
+    if args.save_probas:
+        save_probas("train", y_train, proba_train, artifacts/"preds", prefix=model_tag)
+        save_probas("val",   y_val,   proba_val,   artifacts/"preds", prefix=model_tag)
+        save_probas("test",  y_test,  proba_test,  artifacts/"preds", prefix=model_tag)
+
+    # feature importances where applicable
+    importances_path = None
+    if model_tag == "rf":
+        imp = getattr(clf, "feature_importances_", None)
+        if imp is not None:
+            df_imp = pd.DataFrame({"feature": feature_names, "importance": imp})
+            importances_path = artifacts/"interpretability"/f"{model_tag}_importances.csv"
+            df_imp.to_csv(importances_path, index=False)
+    elif model_tag == "xgb":
         try:
-            model.fit(
-                X_train, y_train,
-                eval_set=eval_set,
-                verbose=False,
-                early_stopping_rounds=200
-            )
-        except TypeError:
-            print("[WARN] This version does not support xgboost early_stopping_rounds. Teach without early stopping.")
-            model.set_params(n_estimators=800)
-            model.fit(
-                X_train, y_train,
-                eval_set=eval_set,
-                verbose=False
-            )
+            # prefer gain importances
+            gain = getattr(clf, "feature_importances_", None)  # importance_type="gain" for sklearn API by default
+            if gain is not None and len(gain)==len(feature_names):
+                df_imp = pd.DataFrame({"feature": feature_names, "importance": gain})
+                importances_path = artifacts/"interpretability"/f"{model_tag}_importances.csv"
+                df_imp.to_csv(importances_path, index=False)
+        except Exception:
+            pass
 
-    elif args.model == "mlp":
-        # Cross-reference hyperparameters with AP metric.
-        def parse_layers_grid(s):
-            outs = []
-            for part in s.split(";"):
-                part = part.strip()
-                if not part:
-                    continue
-                outs.append(tuple(int(x) for x in part.split(",") if x.strip()))
-            return outs
+    # save model (optional)
+    model_path = None
+    if args.save_model:
+        model_path = artifacts/"models"/f"{model_tag}.joblib"
+        dump(clf, model_path)
 
-        layers_grid = parse_layers_grid(args.mlp_layers_grid)
-        alpha_grid  = [float(x) for x in args.mlp_alpha_grid.split(",") if x.strip()]
-        lr_grid     = [float(x) for x in args.mlp_lr_grid.split(",") if x.strip()]
-
-        def fit_one_mlp(hls, alpha, lr):
-            m = MLPClassifier(
-                hidden_layer_sizes=hls,
-                activation="relu",
-                alpha=alpha,
-                learning_rate_init=lr,
-                batch_size=64,
-                max_iter=2000,
-                early_stopping=True,
-                n_iter_no_change=30,
-                random_state=args.seed
-            )
-            spw, neg, pos = neg_pos_ratio(y_train)
-            try:
-                w = np.ones_like(y_train, dtype=float)
-                w[y_train == 1] = spw  # веса ~ neg/pos
-                m.fit(X_train, y_train, sample_weight=w)
-            except TypeError:
-                # soft upsampling to target share
-                Xb, yb = upsample_to_target(X_train, y_train, target_frac=args.mlp_target_pos_frac, seed=args.seed)
-                m.fit(Xb, yb)
-            return m
-
-        if args.mlp_search:
-            best = None
-            best_ap = -1.0
-            tried = 0
-            for hls in layers_grid:
-                for a in alpha_grid:
-                    for lr in lr_grid:
-                        tried += 1
-                        m = fit_one_mlp(hls=hls, alpha=a, lr=lr)
-                        proba_val = m.predict_proba(X_val)[:, 1]
-                        ap = average_precision_score(y_val, proba_val) if len(np.unique(y_val)) > 1 else float("nan")
-                        print(f"[MLP-SEARCH] hls={hls} alpha={a} lr={lr} | val AP={ap:.4f}")
-                        if np.isfinite(ap) and ap > best_ap:
-                            best_ap = ap
-                            best = m
-            print(f"[MLP-SEARCH] tried={tried} | best val AP={best_ap:.4f}")
-            model = best
-        else:
-            # one basic configuration 
-            spw, neg, pos = neg_pos_ratio(y_train)
-            try:
-                w = np.ones_like(y_train, dtype=float)
-                w[y_train == 1] = spw
-                model.fit(X_train, y_train, sample_weight=w)
-            except TypeError:
-                Xb, yb = upsample_to_target(X_train, y_train, target_frac=args.mlp_target_pos_frac, seed=args.seed)
-                print(f"[WARN] MLPClassifier.fit(sample_weight=...) does not support. "
-                      f"Up to class 1 ~{args.mlp_target_pos_frac:.2f} (after upload N={len(yb)}).")
-                model.fit(Xb, yb)
-
-    else:
-        # RF/LR
-        model.fit(X_train, y_train)
-
-    # --- predict proba ---
-    if hasattr(model, "predict_proba"):
-        proba_val  = model.predict_proba(X_val)[:, 1]
-        proba_test = model.predict_proba(X_test)[:, 1]
-    else:
-        # fallback 
-        scores_val  = model.decision_function(X_val)
-        scores_test = model.decision_function(X_test)
-        r_val  = scores_val.argsort().argsort().astype(float);  proba_val  = r_val  / (len(r_val)  - 1 + 1e-9)
-        r_test = scores_test.argsort().argsort().astype(float); proba_test = r_test / (len(r_test) - 1 + 1e-9)
-
-    # --- metrics ---
-    m_val  = compute_metrics(y_val,  proba_val,  args.thr)
-    m_test = compute_metrics(y_test, proba_test, args.thr)
-    base_val  = majority_metrics(y_val,  args.thr)
-    base_test = majority_metrics(y_test, args.thr)
-
-    print(f"\n=== {args.model.upper()} ===")
-    print(f"[VAL ] PR-AUC={m_val['PR_AUC']:.4f} | ROC-AUC={m_val['ROC_AUC']:.4f} | F1={m_val['F1']:.4f} | Recall@{args.thr:.2f}={m_val['Recall@Thr']:.4f} | Brier={m_val['Brier']:.4f}")
-    print(f"[TEST] PR-AUC={m_test['PR_AUC']:.4f} | ROC-AUC={m_test['ROC_AUC']:.4f} | F1={m_test['F1']:.4f} | Recall@{args.thr:.2f}={m_test['Recall@Thr']:.4f} | Brier={m_test['Brier']:.4f}")
-
-    print("\n--- Majority baseline (always 0) ---")
-    print(f"[VAL ] PR-AUC={base_val['PR_AUC']:.4f} | ROC-AUC={base_val['ROC_AUC']:.4f} | F1={base_val['F1']:.4f} | Recall@{args.thr:.2f}={base_val['Recall@Thr']:.4f} | Brier={base_val['Brier']:.4f}")
-    print(f"[TEST] PR-AUC={base_test['PR_AUC']:.4f} | ROC-AUC={base_test['ROC_AUC']:.4f} | F1={base_test['F1']:.4f} | Recall@{args.thr:.2f}={base_test['Recall@Thr']:.4f} | Brier={base_test['Brier']:.4f}")
-
-    # --- save artifacts ---
-    out_dir = pathlib.Path(args.artifacts_dir); (out_dir/"metrics").mkdir(parents=True, exist_ok=True)
-    metrics_path = out_dir/"metrics"/f"{args.model}_eval.json"
-    metrics_json = {
-        "model": args.model,
-        "threshold": args.thr,
-        "prevalence": {"train": prev_tr, "val": prev_va, "test": prev_te},
-        "val": m_val,
-        "test": m_test,
-        "baseline_val": base_val,
-        "baseline_test": base_test
+    # save metrics json
+    prev = {"train": prevalence(y_train), "val": prevalence(y_val), "test": prevalence(y_test)}
+    out = {
+        "model": model_tag,
+        "threshold_for_report": args.thr,
+        "prevalence": prev,
+        "train": m_train, "val": m_val, "test": m_test,
+        "artifacts": {
+            "preds_saved": bool(args.save_probas),
+            "model_path": (str(model_path) if model_path else None),
+            "importances_path": (str(importances_path) if importances_path else None),
+        }
     }
-    metrics_path.write_text(json.dumps(metrics_json, indent=2, ensure_ascii=False))
-
-    if args.save_probas:
-        prob_dir = out_dir/"probas"; prob_dir.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame({"y": y_val, "proba": proba_val}).to_csv(prob_dir/f"{args.model}_val.csv", index=False)
-        pd.DataFrame({"y": y_test, "proba": proba_test}).to_csv(prob_dir/f"{args.model}_test.csv", index=False)
-
-    print(f"\n[OK] metrics saved: {metrics_path}")
-    if args.save_probas:
-        print(f"[OK] Probabilities saved in: {out_dir/'probas'}")
-
+    (artifacts/"metrics"/f"{model_tag}_eval.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
+    print(f"[OK] metrics saved: {artifacts/'metrics'/f'{model_tag}_eval.json'}")
+    if importances_path:
+        print(f"[OK] importances saved: {importances_path}")
+    if model_path:
+        print(f"[OK] model saved: {model_path}")
 
 if __name__ == "__main__":
     main()

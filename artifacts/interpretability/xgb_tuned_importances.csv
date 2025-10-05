@@ -1,4 +1,4 @@
-feature_name,feature,gain
+feature_name,feature,importance_gain
 cesd,f9,8.061515808105469
 health_4,f37,7.290860652923584
 amsp,f7,4.279932022094727

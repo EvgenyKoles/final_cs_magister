@@ -11,92 +11,8 @@ numeric_expected = {
 //
 
 3шаг python scripts/03_train_logreg.py
-запускать из porject
-//
-
-4шаг 
-python scripts/04_train_model.py --model rf
-python scripts/04_train_model.py --model xgb
-python scripts/04_train_model.py --model mlp
-
-//
-
-for info - history
-(base) a08406776@iMac-4 project % history 
- 1017  python scripts/03_train_logreg.py
- 1018  python scripts/03_train_logreg.py
- 1019  python scripts/02_preprocess_split.py\n
- 1020  python scripts/03_train_logreg.py\n
- 1021  python scripts/04_train_model.py --model rf
- 1022  python scripts/04_train_model.py --model xgb
- 1023  python scripts/04_train_model.py --model mlp
- 1024  python scripts/04_train_compare.py --model lr --thr 0.35
- 1025  python scripts/04_train_model.py --model lr --thr 0.35
- 1026  conda install -c conda-forge xgboost\n
- 1027  pip install xgboost
- 1028  python scripts/04_train_model.py --model rf
- 1029  python scripts/04_train_model.py --model rf
- 1030  python scripts/04_train_model.py --model xgb
- 1031  python scripts/04_train_model.py --model mlp
- 1032  python scripts/05_compare_models.py
-(base) a08406776@iMac-4 project % 
-
-results
-
-(base) a08406776@iMac-4 project % python scripts/05_compare_models.py
-
-=== Model comparison (sorted by test PR-AUC) ===
-                 model  test_PR_AUC  val_PR_AUC  test_Recall  val_Recall   test_F1    val_F1  test_ROC_AUC  val_ROC_AUC  test_Brier  val_Brier   thr
-1                  xgb     0.165443    0.113849     0.166667         0.0  0.250000  0.000000      0.637795     0.812500    0.048034   0.060957  0.35
-2  logistic_regression     0.164375    0.086107     0.333333         0.8  0.090909  0.142857      0.681102     0.720313    0.144343   0.179960  0.35
-3                   rf     0.099255    0.130403     0.166667         0.4  0.142857  0.148148      0.611549     0.850000    0.062397   0.072999  0.35
-4                  mlp     0.050648    0.060136     0.000000         0.0  0.000000  0.000000      0.511811     0.640625    0.062511   0.072669  0.35
-
-
-//
-change scale_pos_weight=23 in 04_train_compare 
-results
-=== Model comparison (sorted by test PR-AUC) ===
-                 model  test_PR_AUC  val_PR_AUC  test_Recall  val_Recall   test_F1    val_F1  test_ROC_AUC  val_ROC_AUC  test_Brier  val_Brier   thr
-1                  xgb     0.184831    0.112656     0.166667         0.0  0.200000  0.000000      0.656168     0.810937    0.049118   0.069157  0.35
-2  logistic_regression     0.164375    0.086107     0.333333         0.8  0.090909  0.142857      0.681102     0.720313    0.144343   0.179960  0.35
-3                   rf     0.099255    0.130403     0.166667         0.4  0.142857  0.148148      0.611549     0.850000    0.062397   0.072999  0.35
-4                  mlp     0.050648    0.060136     0.000000         0.0  0.000000  0.000000      0.511811     0.640625    0.062511   0.072669  0.35
-
-///
-
-добавили 06_threshold_search
-выполняем
-python scripts/06_threshold_search.py --model lr  --mode recall --target_recall 0.80
-python scripts/06_threshold_search.py --model rf  --mode recall --target_recall 0.80
-python scripts/06_threshold_search.py --model xgb --mode recall --target_recall 0.80
-python scripts/06_threshold_search.py --model mlp --mode recall --target_recall 0.8
-далее
-python scripts/06_threshold_search.py --model lr  --mode fbeta --beta 2.0
-
-
-появились 
-lr_thresholded_recall.json
-rf_thresholded_recall
-xgb_thresholded_recall
-mlp_thresholded_recall
-и
-xgb_thresholded_fbeta
-
-получили хрень. 
-
-///
-делаем smote, добавили 07_train_smote, 
-python scripts/07_train_smote.py --model xgb --mode fbeta --beta 2.0 --sampling_strategy 0.3
-python scripts/07_train_smote.py --model rf --mode fbeta --beta 2.0 --sampling_strategy 0.9
-
-
-получили хрень
-lr_smote_thresholded_recall
-rf_smote_thresholded_fbeta
-xgb_smote_thresholded_fbeta
-
-////////////////////////тут пересмотрели
+запускать из project
+// 
 
 заменили
 
@@ -157,7 +73,7 @@ Successfully installed xgboost-3.0.5
 запуск
 python scripts/04_train_model.py --model rf
 python scripts/04_train_model.py --model xgb --save_probas
-1031  python scripts/04_train_model.py --model mlp
+python scripts/04_train_model.py --model mlp
 
 выводы
 
@@ -228,3 +144,34 @@ python scripts/05_tune_xgb.py --trials 120 --cv_folds 4 --cv_repeats 8 --agg mea
 [OK] Результаты сохранены: artifacts/metrics/xgb_thresholded_eval.json
 [OK] PR-кривые сохранены в: artifacts/metrics
 (base) a08406776@iMac-4 project % 
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+все для гипотез и вопросов, 
+поменяли 3 4 и 5 скрипты, поменяли 6
+
+запускать все с save probas
+
+
+python scripts/04_train_model.py --model rf  --save_probas --save_model
+python scripts/04_train_model.py --model mlp --save_probas --save_model
+python scripts/04_train_model.py --model xgb --save_probas --save_model
+
+5й запускать так же
+
+
+python scripts/06_eval_aggregate.py \
+  --processed_dir data/processed \
+  --artifacts_dir artifacts \
+  --alpha 0.05 --topk 10
+
+
+  для RQ3 поменяли 2й скрипт
+запускать
+python scripts/02_preprocess_split.py \
+  --input data/processed/_labeled.csv \
+  --outdir data/processed \
+  --artifacts_dir artifacts \
+  --test_size 0.15 --val_size 0.15 --seed 42
+
