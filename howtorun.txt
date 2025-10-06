@@ -175,3 +175,13 @@ python scripts/02_preprocess_split.py \
   --artifacts_dir artifacts \
   --test_size 0.15 --val_size 0.15 --seed 42
 
+
+поменяли 6й скрипт что для RQ2 
+pip install scikit-learn
+
+
+---------------------
+
+для RQ2 создали файл 04_rq2_feature_importance.py
+запускать python scripts/04_rq2_feature_importance.py --processed_dir data/processed --artifacts_dir artifacts \
+  --eval_split test --bg_size 200 --max_eval 2000 --bootstrap 300

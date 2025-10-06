@@ -1,0 +1,35 @@
+{
+  "shap_available": false,
+  "xgboost_available": true,
+  "split": "test",
+  "bg_size": 200,
+  "eval_size": 133,
+  "bootstrap": 300,
+  "seed": 42,
+  "models": {
+    "lr": {
+      "importance": "permutation_only",
+      "summary_csv": "artifacts\\interpretability\\rq2_shap_summary_lr.csv",
+      "rank_csv": "artifacts\\interpretability\\rq2_shap_rank_lr.csv"
+    },
+    "rf": {
+      "importance": "permutation_only",
+      "summary_csv": "artifacts\\interpretability\\rq2_shap_summary_rf.csv",
+      "rank_csv": "artifacts\\interpretability\\rq2_shap_rank_rf.csv"
+    },
+    "xgb": {
+      "importance": "permutation_only",
+      "summary_csv": "artifacts\\interpretability\\rq2_shap_summary_xgb.csv",
+      "rank_csv": "artifacts\\interpretability\\rq2_shap_rank_xgb.csv"
+    },
+    "mlp": {
+      "importance": "permutation_only",
+      "summary_csv": "artifacts\\interpretability\\rq2_shap_summary_mlp.csv",
+      "rank_csv": "artifacts\\interpretability\\rq2_shap_rank_mlp.csv"
+    }
+  },
+  "top5_table": {
+    "stacked": "artifacts\\interpretability\\rq2_top5_all_models.csv",
+    "pivot": "artifacts\\interpretability\\rq2_top5_pivot.csv"
+  }
+}

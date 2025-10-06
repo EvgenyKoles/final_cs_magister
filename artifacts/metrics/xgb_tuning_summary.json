@@ -2,9 +2,9 @@
   "cv_folds": 4,
   "cv_repeats": 8,
   "trials": 120,
-  "best_cv_ap_agg": 0.16216750505798097,
-  "best_cv_ap_mean": 0.2881072259712608,
-  "best_cv_ap_std": 0.12593972091327985,
+  "best_cv_ap_agg": 0.15873056958651197,
+  "best_cv_ap_mean": 0.28725023939350003,
+  "best_cv_ap_std": 0.12851966980698806,
   "best_config": {
     "depth": 3,
     "mcw": 2.0,
@@ -21,17 +21,17 @@
   },
   "final_train_on": "train",
   "val_metrics": {
-    "PR_AUC": 0.11062623879961342,
-    "ROC_AUC": 0.79375,
-    "F1": 0.1111111111111111,
-    "Recall@Thr": 0.2,
+    "PR_AUC": 0.10630902970155878,
+    "ROC_AUC": 0.784375,
+    "F1": 0.0,
+    "Recall@Thr": 0.0,
     "Thr": 0.35
   },
   "test_metrics": {
-    "PR_AUC": 0.2072111415201166,
-    "ROC_AUC": 0.6181102362204725,
-    "F1": 0.4,
-    "Recall@Thr": 0.3333333333333333,
+    "PR_AUC": 0.2085573252445975,
+    "ROC_AUC": 0.6286089238845145,
+    "F1": 0.2222222222222222,
+    "Recall@Thr": 0.16666666666666666,
     "Thr": 0.35
   },
   "xgboost_version": "3.0.5"

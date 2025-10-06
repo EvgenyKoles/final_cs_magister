@@ -29,7 +29,7 @@
   },
   "artifacts": {
     "preds_saved": true,
-    "model_path": "artifacts/models/rf.joblib",
-    "importances_path": "artifacts/interpretability/rf_importances.csv"
+    "model_path": "artifacts\\models\\rf.joblib",
+    "importances_path": "artifacts\\interpretability\\rf_importances.csv"
   }
 }

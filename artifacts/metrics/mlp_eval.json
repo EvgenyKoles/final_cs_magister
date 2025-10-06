@@ -29,7 +29,7 @@
   },
   "artifacts": {
     "preds_saved": true,
-    "model_path": "artifacts/models/mlp.joblib",
+    "model_path": "artifacts\\models\\mlp.joblib",
     "importances_path": null
   }
 }

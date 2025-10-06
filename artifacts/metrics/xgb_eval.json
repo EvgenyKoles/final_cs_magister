@@ -14,22 +14,22 @@
     "Thr": 0.35
   },
   "val": {
-    "PR_AUC": 0.11934951013898382,
-    "ROC_AUC": 0.80625,
+    "PR_AUC": 0.12805968541262658,
+    "ROC_AUC": 0.815625,
     "F1": 0.0,
     "Recall@Thr": 0.0,
     "Thr": 0.35
   },
   "test": {
-    "PR_AUC": 0.1376229810887179,
-    "ROC_AUC": 0.6154855643044619,
+    "PR_AUC": 0.14552747435805904,
+    "ROC_AUC": 0.6351706036745407,
     "F1": 0.0,
     "Recall@Thr": 0.0,
     "Thr": 0.35
   },
   "artifacts": {
     "preds_saved": true,
-    "model_path": "artifacts/models/xgb.joblib",
-    "importances_path": "artifacts/interpretability/xgb_importances.csv"
+    "model_path": "artifacts\\models\\xgb.joblib",
+    "importances_path": "artifacts\\interpretability\\xgb_importances.csv"
   }
 }

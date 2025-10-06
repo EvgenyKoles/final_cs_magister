@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Logistic Regression baseline with:
@@ -5,6 +6,12 @@ Logistic Regression baseline with:
 - Optional isotonic calibration for probabilities.
 - Inferential statistics (coef, SE, z, p-value, 95% CI) via statsmodels.Logit for H1/H3.
 Artifacts saved only for RQ/H.
+
+This version hardens the statsmodels block against non-convergence by:
+- Removing zero-variance and near-duplicate features (|corr| > 0.999).
+- Standardizing features (effects interpreted per +1 SD).
+- Using LBFGS/BFGS with higher iteration limits and recording convergence flags.
+- Falling back to robust covariance and GLM Binomial if needed.
 """
 
 import argparse, json, pathlib, warnings
@@ -19,6 +26,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support
 )
 from sklearn.exceptions import ConvergenceWarning
+from sklearn.preprocessing import StandardScaler
 
 # optional model persistence
 from joblib import dump
@@ -27,7 +35,7 @@ from joblib import dump
 import statsmodels.api as sm
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
-# --- suppress convergence spam
+# --- suppress sklearn convergence spam (not statsmodels)
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
@@ -240,30 +248,133 @@ def main():
         save_probas("val",   y_val,   proba_val,   artifacts / "preds", prefix=model_name)
         save_probas("test",  y_test,  proba_test,  artifacts / "preds", prefix=model_name)
 
-    # --- inferential stats for hypotheses (statsmodels Logit without regularization)
+    # --- inferential stats for hypotheses (statsmodels Logit; stabilized + robust fallbacks)
     coefs_path = artifacts / "interpretability" / "logreg_coefs.csv"
     try:
-        X_train_df = pd.DataFrame(X_train, columns=feature_names)
-        X_train_sm = sm.add_constant(X_train_df, has_constant='add')
-        logit = sm.Logit(y_train, X_train_sm)
-        res = logit.fit(disp=0)
+        Xdf = pd.DataFrame(X_train, columns=feature_names)
 
-        ci = res.conf_int(alpha=0.05)
+        # 1) drop zero-variance columns
+        keep = (Xdf.nunique() > 1)
+        if not keep.all():
+            dropped_const = [c for c, k in zip(Xdf.columns, keep) if not k]
+            if dropped_const:
+                print(f"[INFO] Dropping constant columns: {dropped_const}")
+        Xdf = Xdf.loc[:, keep]
+        kept_names = list(Xdf.columns)
+
+        # 2) drop near-duplicates (|corr| > 0.999)
+        if Xdf.shape[1] > 1:
+            corr = Xdf.corr().abs()
+            upper = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
+            to_drop = [c for c in upper.columns if any(upper[c] > 0.999)]
+            if to_drop:
+                print(f"[INFO] Dropping highly correlated columns: {to_drop}")
+                Xdf = Xdf.drop(columns=to_drop)
+                kept_names = [n for n in kept_names if n not in to_drop]
+
+        # 3) standardize (effects per +1 SD)
+        scaler = StandardScaler(with_mean=True, with_std=True)
+        X_std = scaler.fit_transform(Xdf.values)
+        X_sm  = sm.add_constant(X_std, has_constant='add')
+
+        # helper: convert anything to numpy array safely
+        def as_np(x):
+            try:
+                return x.values if hasattr(x, "values") else np.asarray(x)
+            except Exception:
+                return np.asarray(x)
+
+        # -- Try Logit MLE
+        logit = sm.Logit(y_train, X_sm)
+        try:
+            res = logit.fit(method="lbfgs", maxiter=4000, disp=0)
+            method_label = "statsmodels.Logit (LBFGS) on standardized features"
+        except Exception:
+            res = logit.fit(method="bfgs", maxiter=4000, disp=0)
+            method_label = "statsmodels.Logit (BFGS) on standardized features"
+
+        params = as_np(res.params)
+
+        # try to get SE/p/CI; if Hessian invert failed, use robust cov; else GLM fallback
+        def extract_coefs_from_result(r):
+            bse = as_np(r.bse)
+            # For Logit, tvalues are z-scores; if absent, compute z = beta / SE
+            tvalues = as_np(getattr(r, "tvalues", params / bse))
+            pvalues = as_np(r.pvalues)
+            ci = as_np(r.conf_int(alpha=0.05))
+            return bse, tvalues, pvalues, ci
+
+        try:
+            bse, tvalues, pvalues, ci = extract_coefs_from_result(res)
+        except Exception:
+            # robust covariance from MLE result
+            try:
+                res_rob = res.get_robustcov_results(cov_type="HC0")
+                bse, tvalues, pvalues, ci = extract_coefs_from_result(res_rob)
+                method_label += " + robust cov (HC0)"
+            except Exception:
+                # final attempt: GLM Binomial with robust cov
+                glm = sm.GLM(y_train, X_sm, family=sm.families.Binomial())
+                res_glm = glm.fit(maxiter=800, tol=1e-8)
+                params  = as_np(res_glm.params)
+                bse     = as_np(res_glm.bse)
+                tvalues = params / bse
+                pvalues = as_np(res_glm.pvalues)
+                ci      = as_np(res_glm.conf_int(alpha=0.05))
+                method_label = "statsmodels.GLM Binomial (logit) on standardized features"
+
+        # shapes & CI split
+        k = 1 + len(kept_names)
+        ci = as_np(ci)
+        if ci.shape == (k, 2):
+            ci_lo = ci[:, 0]
+            ci_hi = ci[:, 1]
+        else:
+            ci_lo = np.full(k, np.nan)
+            ci_hi = np.full(k, np.nan)
+
+        names_out = ["intercept"] + kept_names
+
+        # OR per +1 SD (not for intercept)
+        or_1sd    = np.r_[np.nan, np.exp(params[1:])] if params.shape[0] >= k else np.full(k, np.nan)
+        or_1sd_lo = np.r_[np.nan, np.exp(ci_lo[1:])]  if ci_lo.shape[0]  >= k else np.full(k, np.nan)
+        or_1sd_hi = np.r_[np.nan, np.exp(ci_hi[1:])]  if ci_hi.shape[0]  >= k else np.full(k, np.nan)
+
+        # convergence info (best effort)
+        converged = None
+        n_iter = None
+        try:
+            converged = getattr(res, "converged", None)
+            if hasattr(res, "mle_retvals") and isinstance(res.mle_retvals, dict):
+                converged = res.mle_retvals.get("converged", converged)
+                n_iter = res.mle_retvals.get("iterations", None)
+        except Exception:
+            pass
+
         df_coef = pd.DataFrame({
-            "feature": ["intercept"] + feature_names,
-            "beta":    res.params.values,
-            "SE":      res.bse.values,
-            "z":       res.tvalues.values,       # for Logit, tvalues are z-scores
-            "p_value": res.pvalues.values,
-            "CI_low":  ci[0].values,
-            "CI_high": ci[1].values
+            "feature": names_out,
+            "beta_std": params[:k] if params.shape[0] >= k else np.full(k, np.nan),
+            "SE":      bse[:k]     if np.size(bse)     >= k else np.full(k, np.nan),
+            "z":       tvalues[:k] if np.size(tvalues) >= k else np.full(k, np.nan),
+            "p_value": pvalues[:k] if np.size(pvalues) >= k else np.full(k, np.nan),
+            "CI_low":  ci_lo,
+            "CI_high": ci_hi,
+            "OR_per_1SD": or_1sd,
+            "OR_CI_low":  or_1sd_lo,
+            "OR_CI_high": or_1sd_hi,
+            "converged":  converged,
+            "n_iter":     n_iter,
+            "method":     method_label
         })
         df_coef.to_csv(coefs_path, index=False)
-        coef_info = {"path": str(coefs_path), "n_features": len(feature_names), "method": "statsmodels.Logit (no penalty)"}
+        coef_info = {"path": str(coefs_path),
+                     "n_features": len(kept_names),
+                     "method": method_label}
         print(f"[OK] coefficients with p-values saved: {coefs_path}")
+
     except (PerfectSeparationError, np.linalg.LinAlgError, Exception) as e:
         # fallback: save sklearn coefficients without p-values
-        print(f"[WARN] statsmodels.Logit failed ({type(e).__name__}: {e}). Saving sklearn coefficients only (no p-values).")
+        print(f"[WARN] statsmodels inference failed ({type(e).__name__}: {e}). Saving sklearn coefficients only (no p-values).")
         beta = (clf.coef_.ravel().tolist() if hasattr(clf, "coef_") else [np.nan] * len(feature_names))
         intercept = (float(clf.intercept_[0]) if hasattr(clf, "intercept_") else np.nan)
         df_coef = pd.DataFrame({
@@ -274,6 +385,7 @@ def main():
             "p_value": [np.nan] * (len(feature_names) + 1),
             "CI_low":  [np.nan] * (len(feature_names) + 1),
             "CI_high": [np.nan] * (len(feature_names) + 1),
+            "method":  "sklearn coefficients (no p-values)"
         })
         df_coef.to_csv(coefs_path, index=False)
         coef_info = {"path": str(coefs_path), "n_features": len(feature_names), "method": "sklearn coefficients (no p-values)"}
@@ -300,6 +412,7 @@ def main():
     metrics_path = artifacts / "metrics" / "logreg_eval.json"
     metrics_path.write_text(json.dumps(out, indent=2, ensure_ascii=False))
     print(f"[OK] metrics saved: {metrics_path}")
+
 
 if __name__ == "__main__":
     main()

@@ -37,11 +37,11 @@
   },
   "artifacts": {
     "coefs_path": {
-      "path": "artifacts/interpretability/logreg_coefs.csv",
-      "n_features": 39,
-      "method": "statsmodels.Logit (no penalty)"
+      "path": "artifacts\\interpretability\\logreg_coefs.csv",
+      "n_features": 38,
+      "method": "statsmodels.Logit (LBFGS) on standardized features"
     },
-    "preds_saved": true,
+    "preds_saved": false,
     "model_path": null
   }
 }

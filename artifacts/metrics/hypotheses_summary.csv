@@ -1,9 +1,0 @@
-Hypothesis,Check,Result,Evidence
-H1_CESD,CES-D positive association,Supported (LR p<0.05),"beta=1.1977, p=0.0002017, feature='cesd'"
-H1_STAIT,STAI-T positive association,Not supported (LR),"beta=0.2525, p=0.4391, feature='stai_t'"
-H1_HEALTH,Lower self-reported health -> higher risk,Not supported (LR),"beta=-23.2660, p=1, feature='health_1'"
-H2_STUDY,Study hours positive association,Feature not found,no matching feature name in LR coefs
-H2_EMPLOY,Employment positive association,Feature not found,no matching feature name in LR coefs
-H3_AMSP,AMSP negative association,Not supported (LR),"beta=0.8438, p=0.002513, feature='amsp'"
-H3_MBIEA,MBI-EA negative association,Feature not found,no matching feature name in LR coefs
-INFO,SHAP,Computed for tree models,"[{'model': 'xgb_tuned', 'global_shap_path': 'artifacts/interpretability/xgb_tuned_shap_global.csv'}]"
