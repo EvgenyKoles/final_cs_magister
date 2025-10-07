@@ -1,0 +1,11 @@
+Model,Split,PR_AUC,ROC_AUC,F1,Recall@Thr,Thr,Prevalence,Source
+Artificial Neural Network,VAL,0.1156,0.7125,0.0702,0.4,0.35,0.0376,mlp_eval.json
+Logistic Regression,VAL,0.1811,0.8516,0.1515,1.0,0.35,0.0376,logreg_eval.json
+Random Forest,VAL,0.1156,0.8187,0.0,0.0,0.35,0.0376,rf_eval.json
+XGBoost,VAL,0.1281,0.8156,0.0,0.0,0.35,0.0376,xgb_eval.json
+XGBoost (tuned),VAL,0.1063,0.7844,0.0,0.0,0.35,0.0376,xgb_tuned_eval.json
+Artificial Neural Network,TEST,0.1386,0.7375,0.1887,0.8333,0.35,0.0451,mlp_eval.json
+Logistic Regression,TEST,0.0958,0.6352,0.1053,0.5,0.35,0.0451,logreg_eval.json
+Random Forest,TEST,0.0859,0.6266,0.0,0.0,0.35,0.0451,rf_eval.json
+XGBoost,TEST,0.1455,0.6352,0.0,0.0,0.35,0.0451,xgb_eval.json
+XGBoost (tuned),TEST,0.2086,0.6286,0.2222,0.1667,0.35,0.0451,xgb_tuned_eval.json

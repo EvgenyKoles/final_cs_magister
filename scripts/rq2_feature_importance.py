@@ -359,7 +359,7 @@ def main():
             f = r["feature"]
             j = feat_idx[f]
             s = dir_vec[j]
-            dir_str = "↑" if s > 0 else ("↓" if s < 0 else "–")
+            dir_str = "UP" if s > 0 else ("DOWN" if s < 0 else "–")
             top5_rows.append({
                 "model": name.upper(),
                 "feature": f,

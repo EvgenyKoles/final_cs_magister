@@ -1,0 +1,1672 @@
+{
+  "meta": {
+    "threshold": 0.35,
+    "processed_dir": "data/processed",
+    "models_dir": "artifacts/models",
+    "metadata_file": "artifacts\\metadata\\subgroups_test.csv",
+    "n_test": 133,
+    "n_features": 39,
+    "seed": 42,
+    "n_repeats_permutation": 15
+  },
+  "subgroups": {
+    "gender": {
+      "2": {
+        "n": 92,
+        "prevalence": 0.043478260869565216,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.09676712176712177,
+              "ROC_AUC": 0.5724431818181819,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "health_3",
+                "importance": 0.2683532151790838
+              },
+              {
+                "feature": "year",
+                "importance": 0.10678143646124909
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.06940556418080934
+              },
+              {
+                "feature": "age",
+                "importance": 0.06872709021223879
+              },
+              {
+                "feature": "job_1",
+                "importance": 0.0031485552433320094
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.19284794790246856,
+              "ROC_AUC": 0.625,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "amsp",
+                "importance": 0.01704835164681639
+              },
+              {
+                "feature": "age",
+                "importance": 0.016550542334054664
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.0122691377436649
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.006581110702458278
+              },
+              {
+                "feature": "year",
+                "importance": 0.005718508580115385
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.2745967741935484,
+              "ROC_AUC": 0.6079545454545454,
+              "F1": 0.2857142857142857,
+              "Recall@Thr": 0.25
+            },
+            "top5": [
+              {
+                "feature": "age",
+                "importance": 0.0064950352795053
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.005791202225243561
+              },
+              {
+                "feature": "health_4",
+                "importance": 0.004984216314475926
+              },
+              {
+                "feature": "health_3",
+                "importance": 0.0029192251692496357
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.002599247185287997
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 0.22499999999999998,
+              "ROC_AUC": 0.8863636363636364,
+              "F1": 0.25806451612903225,
+              "Recall@Thr": 1.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.011834991849078309
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.009475652112922303
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.00890995599803147
+              },
+              {
+                "feature": "age",
+                "importance": 0.006974596005014459
+              },
+              {
+                "feature": "year",
+                "importance": 0.006845576823720164
+              }
+            ]
+          }
+        }
+      },
+      "1": {
+        "n": 40,
+        "prevalence": 0.025,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.125,
+              "ROC_AUC": 0.8205128205128205,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.020279097013816486
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.0037081325604619657
+              },
+              {
+                "feature": "age",
+                "importance": 0.0035895615380668396
+              },
+              {
+                "feature": "erec_mean",
+                "importance": 0.002434383283912095
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.0015283959181485154
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.09090909090909091,
+              "ROC_AUC": 0.7435897435897436,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.07006401405422633
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.01994471047909241
+              },
+              {
+                "feature": "health_2",
+                "importance": 0.006028012421870118
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.004868591914088232
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.004103090420900683
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.08333333333333333,
+              "ROC_AUC": 0.717948717948718,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.04290397038105324
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.008137684544768783
+              },
+              {
+                "feature": "age",
+                "importance": 0.005649199495651848
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.0055349538632160356
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.0031811985384264238
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 0.2,
+              "ROC_AUC": 0.8974358974358975,
+              "F1": 0.09523809523809523,
+              "Recall@Thr": 1.0
+            },
+            "top5": [
+              {
+                "feature": "psyt",
+                "importance": 0.009299954961992802
+              },
+              {
+                "feature": "year",
+                "importance": 0.00692086735382255
+              },
+              {
+                "feature": "health_3",
+                "importance": 0.002660486675974431
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.0021248104629556248
+              },
+              {
+                "feature": "qcae_cog",
+                "importance": 0.0018184000070095093
+              }
+            ]
+          }
+        }
+      },
+      "3": {
+        "n": 1,
+        "prevalence": 1.0,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          }
+        }
+      }
+    },
+    "year": {
+      "1": {
+        "n": 30,
+        "prevalence": 0.03333333333333333,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.06666666666666667,
+              "ROC_AUC": 0.5517241379310345,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.02319061984554814
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.0024815090299101766
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.002002231094914364
+              },
+              {
+                "feature": "health_4",
+                "importance": 0.0019240757791119574
+              },
+              {
+                "feature": "age",
+                "importance": 0.0013484784254669
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.07142857142857142,
+              "ROC_AUC": 0.5517241379310345,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.10381831824220714
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.029509397886064177
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.013316278221267791
+              },
+              {
+                "feature": "health_2",
+                "importance": 0.009025012485054327
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.008766808603892643
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.0625,
+              "ROC_AUC": 0.48275862068965514,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.059642848060111726
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.008702026035018054
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.006953893540654724
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.006733650955210872
+              },
+              {
+                "feature": "health_2",
+                "importance": 0.003799354681163793
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 0.5,
+              "ROC_AUC": 0.9655172413793104,
+              "F1": 0.2,
+              "Recall@Thr": 1.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.01539569967216056
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.009189659871288603
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.007291296481185272
+              },
+              {
+                "feature": "health_5",
+                "importance": 0.006627489498294503
+              },
+              {
+                "feature": "health_4",
+                "importance": 0.004637947394796723
+              }
+            ]
+          }
+        }
+      },
+      "5": {
+        "n": 26,
+        "prevalence": 0.0,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          }
+        }
+      },
+      "2": {
+        "n": 23,
+        "prevalence": 0.0,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": NaN,
+              "ROC_AUC": NaN,
+              "F1": NaN,
+              "Recall@Thr": NaN
+            },
+            "top5": []
+          }
+        }
+      },
+      "4": {
+        "n": 16,
+        "prevalence": 0.125,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.18333333333333335,
+              "ROC_AUC": 0.5,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "health_3",
+                "importance": 1.804825896990188
+              },
+              {
+                "feature": "amsp",
+                "importance": 1.140174549605394
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.06155360207020408
+              },
+              {
+                "feature": "erec_mean",
+                "importance": 0.030149507647761222
+              },
+              {
+                "feature": "qcae_cog",
+                "importance": 0.016524149692221896
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.14583333333333331,
+              "ROC_AUC": 0.39285714285714285,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "jspe",
+                "importance": 0.08426786317049398
+              },
+              {
+                "feature": "erec_mean",
+                "importance": 0.07226100253516408
+              },
+              {
+                "feature": "health_3",
+                "importance": 0.020546281841974424
+              },
+              {
+                "feature": "qcae_cog",
+                "importance": 0.018684701905454904
+              },
+              {
+                "feature": "age",
+                "importance": 0.00982664281089726
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.16233766233766234,
+              "ROC_AUC": 0.4642857142857143,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "health_3",
+                "importance": 0.04299942869671154
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.03652294912933285
+              },
+              {
+                "feature": "erec_mean",
+                "importance": 0.03261932288982137
+              },
+              {
+                "feature": "health_4",
+                "importance": 0.02041693611209059
+              },
+              {
+                "feature": "qcae_cog",
+                "importance": 0.008142978112530093
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 0.3125,
+              "ROC_AUC": 0.4642857142857143,
+              "F1": 0.25,
+              "Recall@Thr": 0.5
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.01843901664242339
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.018044229427668805
+              },
+              {
+                "feature": "sex_1",
+                "importance": 0.012683755844276915
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.01159782617481974
+              },
+              {
+                "feature": "health_4",
+                "importance": 0.01098598900386032
+              }
+            ]
+          }
+        }
+      },
+      "6": {
+        "n": 19,
+        "prevalence": 0.05263157894736842,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.5,
+              "ROC_AUC": 0.9444444444444444,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "cesd",
+                "importance": 0.06505249418971312
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.03827034372874341
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.023414926232492823
+              },
+              {
+                "feature": "age",
+                "importance": 0.013852998096890778
+              },
+              {
+                "feature": "sex_2",
+                "importance": 0.004977012737324308
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.5,
+              "ROC_AUC": 0.9444444444444444,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "cesd",
+                "importance": 0.13932296915777756
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.1328222258412875
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.08648433668032392
+              },
+              {
+                "feature": "age",
+                "importance": 0.06838309256454017
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.01781738750404142
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.5,
+              "ROC_AUC": 0.9444444444444444,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "cesd",
+                "importance": 0.07215415225088025
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.055488353205440225
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.04310301850340906
+              },
+              {
+                "feature": "age",
+                "importance": 0.02984923134521017
+              },
+              {
+                "feature": "health_3",
+                "importance": 0.015283702465482163
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 1.0,
+              "ROC_AUC": 1.0,
+              "F1": 0.25,
+              "Recall@Thr": 1.0
+            },
+            "top5": [
+              {
+                "feature": "erec_mean",
+                "importance": 0.013054627323809657
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.00787403983878046
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.005844132016771916
+              },
+              {
+                "feature": "sex_1",
+                "importance": 0.005733288621735544
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.005318715279057137
+              }
+            ]
+          }
+        }
+      },
+      "3": {
+        "n": 19,
+        "prevalence": 0.10526315789473684,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.22549019607843135,
+              "ROC_AUC": 0.5147058823529411,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "age",
+                "importance": 0.34241946628137315
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.03413525004290517
+              },
+              {
+                "feature": "job_1",
+                "importance": 0.02804392940413054
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.027961794330024912
+              },
+              {
+                "feature": "sex_1",
+                "importance": 0.006723049829330411
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.3125,
+              "ROC_AUC": 0.5588235294117647,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "psyt",
+                "importance": 0.041577613323675745
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.032575552735393205
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.009207831047389137
+              },
+              {
+                "feature": "age",
+                "importance": 0.006307377891096263
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.0060716994606348235
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.3026315789473684,
+              "ROC_AUC": 0.47058823529411764,
+              "F1": 0.5,
+              "Recall@Thr": 0.5
+            },
+            "top5": [
+              {
+                "feature": "psyt",
+                "importance": 0.01212524717953809
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.005220420627871381
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.004607091628117551
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.0007223685164330954
+              },
+              {
+                "feature": "age",
+                "importance": 0.0
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 0.20833333333333331,
+              "ROC_AUC": 0.676470588235294,
+              "F1": 0.36363636363636365,
+              "Recall@Thr": 1.0
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.02738263301966073
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.013437714142861983
+              },
+              {
+                "feature": "qcae_cog",
+                "importance": 0.009663425218449954
+              },
+              {
+                "feature": "stud_h",
+                "importance": 0.009132846276819801
+              },
+              {
+                "feature": "age",
+                "importance": 0.006604363628602572
+              }
+            ]
+          }
+        }
+      }
+    },
+    "employment": {
+      "0": {
+        "n": 85,
+        "prevalence": 0.03529411764705882,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.09444444444444446,
+              "ROC_AUC": 0.7682926829268293,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "amsp",
+                "importance": 0.011034726052811961
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.009518259957294129
+              },
+              {
+                "feature": "qcae_aff",
+                "importance": 0.006548481075968173
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.00469919879984008
+              },
+              {
+                "feature": "age",
+                "importance": 0.00252015477556621
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.16202825216107947,
+              "ROC_AUC": 0.7479674796747967,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "amsp",
+                "importance": 0.038033922150142764
+              },
+              {
+                "feature": "qcae_aff",
+                "importance": 0.02272182371266409
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.017798256800576777
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.01765149824993621
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.015214939488885915
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.2178030303030303,
+              "ROC_AUC": 0.7520325203252033,
+              "F1": 0.3333333333333333,
+              "Recall@Thr": 0.3333333333333333
+            },
+            "top5": [
+              {
+                "feature": "amsp",
+                "importance": 0.013852612229974338
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.011699969043564308
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.009143272580598376
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.004716536697084278
+              },
+              {
+                "feature": "erec_mean",
+                "importance": 0.003350577965564363
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 0.09615384615384615,
+              "ROC_AUC": 0.6097560975609756,
+              "F1": 0.10810810810810811,
+              "Recall@Thr": 0.6666666666666666
+            },
+            "top5": [
+              {
+                "feature": "stai_t",
+                "importance": 0.016015334652522643
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.009303009467208275
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.007988187547449632
+              },
+              {
+                "feature": "year",
+                "importance": 0.007425328267930028
+              },
+              {
+                "feature": "qcae_cog",
+                "importance": 0.006586978832446655
+              }
+            ]
+          }
+        }
+      },
+      "1": {
+        "n": 48,
+        "prevalence": 0.0625,
+        "models": {
+          "rf": {
+            "metrics": {
+              "PR_AUC": 0.21464646464646464,
+              "ROC_AUC": 0.5333333333333333,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "health_3",
+                "importance": 0.6031776728012038
+              },
+              {
+                "feature": "age",
+                "importance": 0.2601804537874369
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.13283108732478965
+              },
+              {
+                "feature": "year",
+                "importance": 0.0268763783276932
+              },
+              {
+                "feature": "psyt",
+                "importance": 0.010907986075455638
+              }
+            ]
+          },
+          "xgb": {
+            "metrics": {
+              "PR_AUC": 0.21464646464646464,
+              "ROC_AUC": 0.5185185185185186,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "cesd",
+                "importance": 0.034765631568252506
+              },
+              {
+                "feature": "age",
+                "importance": 0.03166080962974687
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.03048115463524328
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.01362395283059699
+              },
+              {
+                "feature": "health_3",
+                "importance": 0.010997358813517632
+              }
+            ]
+          },
+          "xgb_tuned": {
+            "metrics": {
+              "PR_AUC": 0.37858220211161386,
+              "ROC_AUC": 0.4962962962962963,
+              "F1": 0.0,
+              "Recall@Thr": 0.0
+            },
+            "top5": [
+              {
+                "feature": "age",
+                "importance": 0.024791249933333377
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.021048947854164758
+              },
+              {
+                "feature": "health_3",
+                "importance": 0.017725761820568717
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.013434917382121733
+              },
+              {
+                "feature": "glang_1",
+                "importance": 0.006108755470559986
+              }
+            ]
+          },
+          "mlp": {
+            "metrics": {
+              "PR_AUC": 0.29914529914529914,
+              "ROC_AUC": 0.8814814814814815,
+              "F1": 0.375,
+              "Recall@Thr": 1.0
+            },
+            "top5": [
+              {
+                "feature": "erec_mean",
+                "importance": 0.015371668497826774
+              },
+              {
+                "feature": "cesd",
+                "importance": 0.00941890144041501
+              },
+              {
+                "feature": "amsp",
+                "importance": 0.009167779162811663
+              },
+              {
+                "feature": "stai_t",
+                "importance": 0.006894803901979496
+              },
+              {
+                "feature": "jspe",
+                "importance": 0.005822912091065298
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "consistency": {
+    "rf": {
+      "by_variable": {
+        "gender": {
+          "PR_AUC": {
+            "min": 0.09676712176712177,
+            "max": 0.125,
+            "mean": 0.11088356088356088,
+            "std": 0.014116439116439117,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.5724431818181819,
+            "max": 0.8205128205128205,
+            "mean": 0.6964780011655012,
+            "std": 0.1240348193473193,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          }
+        },
+        "year": {
+          "PR_AUC": {
+            "min": 0.06666666666666667,
+            "max": 0.5,
+            "mean": 0.24387254901960784,
+            "std": 0.1589072869803025,
+            "n": 4
+          },
+          "ROC_AUC": {
+            "min": 0.5,
+            "max": 0.9444444444444444,
+            "mean": 0.627718616182105,
+            "std": 0.18383031166005423,
+            "n": 4
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 4
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 4
+          }
+        },
+        "employment": {
+          "PR_AUC": {
+            "min": 0.09444444444444446,
+            "max": 0.21464646464646464,
+            "mean": 0.15454545454545454,
+            "std": 0.06010101010101009,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.5333333333333333,
+            "max": 0.7682926829268293,
+            "mean": 0.6508130081300814,
+            "std": 0.11747967479674798,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          }
+        }
+      },
+      "pooled": {
+        "PR_AUC": {
+          "min": 0.06666666666666667,
+          "max": 0.5,
+          "mean": 0.1882935283670578,
+          "std": 0.13002283223075464,
+          "n": 8
+        },
+        "ROC_AUC": {
+          "min": 0.5,
+          "max": 0.9444444444444444,
+          "mean": 0.6506820604149481,
+          "std": 0.15805473913294973,
+          "n": 8
+        },
+        "F1": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 8
+        },
+        "Recall@Thr": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 8
+        }
+      },
+      "mean_pairwise_jaccard_top5": {
+        "gender": 0.037037037037037035,
+        "year": 0.12962962962962965,
+        "employment": 0.25
+      }
+    },
+    "xgb": {
+      "by_variable": {
+        "gender": {
+          "PR_AUC": {
+            "min": 0.09090909090909091,
+            "max": 0.19284794790246856,
+            "mean": 0.14187851940577972,
+            "std": 0.050969428496688826,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.625,
+            "max": 0.7435897435897436,
+            "mean": 0.6842948717948718,
+            "std": 0.059294871794871806,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          }
+        },
+        "year": {
+          "PR_AUC": {
+            "min": 0.07142857142857142,
+            "max": 0.5,
+            "mean": 0.25744047619047616,
+            "std": 0.16501761784936866,
+            "n": 4
+          },
+          "ROC_AUC": {
+            "min": 0.39285714285714285,
+            "max": 0.9444444444444444,
+            "mean": 0.6119623136610965,
+            "std": 0.2031033058384623,
+            "n": 4
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 4
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 4
+          }
+        },
+        "employment": {
+          "PR_AUC": {
+            "min": 0.16202825216107947,
+            "max": 0.21464646464646464,
+            "mean": 0.18833735840377205,
+            "std": 0.026309106242692587,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.5185185185185186,
+            "max": 0.7479674796747967,
+            "mean": 0.6332429990966577,
+            "std": 0.11472448057813905,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "std": 0.0,
+            "n": 2
+          }
+        }
+      },
+      "pooled": {
+        "PR_AUC": {
+          "min": 0.07142857142857142,
+          "max": 0.5,
+          "mean": 0.21127420754762605,
+          "std": 0.12976535498358646,
+          "n": 8
+        },
+        "ROC_AUC": {
+          "min": 0.39285714285714285,
+          "max": 0.9444444444444444,
+          "mean": 0.6353656245534307,
+          "std": 0.16021352989526844,
+          "n": 8
+        },
+        "F1": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 8
+        },
+        "Recall@Thr": {
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 8
+        }
+      },
+      "mean_pairwise_jaccard_top5": {
+        "gender": 0.037037037037037035,
+        "year": 0.14814814814814817,
+        "employment": 0.25
+      }
+    },
+    "xgb_tuned": {
+      "by_variable": {
+        "gender": {
+          "PR_AUC": {
+            "min": 0.08333333333333333,
+            "max": 0.2745967741935484,
+            "mean": 0.17896505376344085,
+            "std": 0.09563172043010752,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.6079545454545454,
+            "max": 0.717948717948718,
+            "mean": 0.6629516317016317,
+            "std": 0.05499708624708627,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.2857142857142857,
+            "mean": 0.14285714285714285,
+            "std": 0.14285714285714285,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.25,
+            "mean": 0.125,
+            "std": 0.125,
+            "n": 2
+          }
+        },
+        "year": {
+          "PR_AUC": {
+            "min": 0.0625,
+            "max": 0.5,
+            "mean": 0.2568673103212577,
+            "std": 0.16425770814692758,
+            "n": 4
+          },
+          "ROC_AUC": {
+            "min": 0.4642857142857143,
+            "max": 0.9444444444444444,
+            "mean": 0.5905192536784829,
+            "std": 0.2044466619434099,
+            "n": 4
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.5,
+            "mean": 0.125,
+            "std": 0.21650635094610965,
+            "n": 4
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.5,
+            "mean": 0.125,
+            "std": 0.21650635094610965,
+            "n": 4
+          }
+        },
+        "employment": {
+          "PR_AUC": {
+            "min": 0.2178030303030303,
+            "max": 0.37858220211161386,
+            "mean": 0.29819261620732207,
+            "std": 0.08038958590429178,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.4962962962962963,
+            "max": 0.7520325203252033,
+            "mean": 0.6241644083107498,
+            "std": 0.1278681120144535,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.0,
+            "max": 0.3333333333333333,
+            "mean": 0.16666666666666666,
+            "std": 0.16666666666666666,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 0.0,
+            "max": 0.3333333333333333,
+            "mean": 0.16666666666666666,
+            "std": 0.16666666666666666,
+            "n": 2
+          }
+        }
+      },
+      "pooled": {
+        "PR_AUC": {
+          "min": 0.0625,
+          "max": 0.5,
+          "mean": 0.24772307265331955,
+          "std": 0.13875443686501884,
+          "n": 8
+        },
+        "ROC_AUC": {
+          "min": 0.4642857142857143,
+          "max": 0.9444444444444444,
+          "mean": 0.6170386368423368,
+          "std": 0.163200140784382,
+          "n": 8
+        },
+        "F1": {
+          "min": 0.0,
+          "max": 0.5,
+          "mean": 0.13988095238095238,
+          "std": 0.18914621244566246,
+          "n": 8
+        },
+        "Recall@Thr": {
+          "min": 0.0,
+          "max": 0.5,
+          "mean": 0.13541666666666666,
+          "std": 0.18604761561970573,
+          "n": 8
+        }
+      },
+      "mean_pairwise_jaccard_top5": {
+        "gender": 0.08333333333333333,
+        "year": 0.13227513227513227,
+        "employment": 0.1111111111111111
+      }
+    },
+    "mlp": {
+      "by_variable": {
+        "gender": {
+          "PR_AUC": {
+            "min": 0.2,
+            "max": 0.22499999999999998,
+            "mean": 0.2125,
+            "std": 0.012499999999999983,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.8863636363636364,
+            "max": 0.8974358974358975,
+            "mean": 0.8918997668997669,
+            "std": 0.005536130536130557,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.09523809523809523,
+            "max": 0.25806451612903225,
+            "mean": 0.17665130568356374,
+            "std": 0.08141321044546851,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 1.0,
+            "max": 1.0,
+            "mean": 1.0,
+            "std": 0.0,
+            "n": 2
+          }
+        },
+        "year": {
+          "PR_AUC": {
+            "min": 0.20833333333333331,
+            "max": 1.0,
+            "mean": 0.5052083333333334,
+            "std": 0.30418628646768414,
+            "n": 4
+          },
+          "ROC_AUC": {
+            "min": 0.4642857142857143,
+            "max": 1.0,
+            "mean": 0.7765683859750797,
+            "std": 0.2197517873955482,
+            "n": 4
+          },
+          "F1": {
+            "min": 0.2,
+            "max": 0.36363636363636365,
+            "mean": 0.2659090909090909,
+            "std": 0.06000172173838221,
+            "n": 4
+          },
+          "Recall@Thr": {
+            "min": 0.5,
+            "max": 1.0,
+            "mean": 0.875,
+            "std": 0.21650635094610965,
+            "n": 4
+          }
+        },
+        "employment": {
+          "PR_AUC": {
+            "min": 0.09615384615384615,
+            "max": 0.29914529914529914,
+            "mean": 0.19764957264957264,
+            "std": 0.1014957264957265,
+            "n": 2
+          },
+          "ROC_AUC": {
+            "min": 0.6097560975609756,
+            "max": 0.8814814814814815,
+            "mean": 0.7456187895212285,
+            "std": 0.13586269196025297,
+            "n": 2
+          },
+          "F1": {
+            "min": 0.10810810810810811,
+            "max": 0.375,
+            "mean": 0.24155405405405406,
+            "std": 0.13344594594594594,
+            "n": 2
+          },
+          "Recall@Thr": {
+            "min": 0.6666666666666666,
+            "max": 1.0,
+            "mean": 0.8333333333333333,
+            "std": 0.16666666666666669,
+            "n": 2
+          }
+        }
+      },
+      "pooled": {
+        "PR_AUC": {
+          "min": 0.09615384615384615,
+          "max": 1.0,
+          "mean": 0.3551415598290598,
+          "std": 0.26725766587839545,
+          "n": 8
+        },
+        "ROC_AUC": {
+          "min": 0.4642857142857143,
+          "max": 1.0,
+          "mean": 0.7976638320927887,
+          "std": 0.17857081893054852,
+          "n": 8
+        },
+        "F1": {
+          "min": 0.09523809523809523,
+          "max": 0.375,
+          "mean": 0.2375058853889499,
+          "std": 0.09613726678022165,
+          "n": 8
+        },
+        "Recall@Thr": {
+          "min": 0.5,
+          "max": 1.0,
+          "mean": 0.8958333333333333,
+          "std": 0.18517071702740812,
+          "n": 8
+        }
+      },
+      "mean_pairwise_jaccard_top5": {
+        "gender": 0.037037037037037035,
+        "year": 0.1693121693121693,
+        "employment": 0.25
+      }
+    }
+  }
+}

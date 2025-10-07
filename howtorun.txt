@@ -182,6 +182,15 @@ pip install scikit-learn
 
 ---------------------
 
-для RQ2 создали файл 04_rq2_feature_importance.py
+для RQ2 создали файл rq2_feature_importance.py
 запускать python scripts/04_rq2_feature_importance.py --processed_dir data/processed --artifacts_dir artifacts \
   --eval_split test --bg_size 200 --max_eval 2000 --bootstrap 300
+
+для RQ3 добавили файл 05_rq3_subgroups
+запускать 
+python scripts/rq3_subgroups.py --processed_dir data/processed --models_dir artifacts/models --metadata_file artifacts/metadata/subgroups_test.csv --artifacts_dir artifacts --thr 0.35 --n_repeats 15
+
+
+-----
+python scripts/06_rq1_make_table.py --metrics_dir artifacts/metrics --out_csv artifacts/metrics/rq1_summary.csv
+rq1_make_table.py 
