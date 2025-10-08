@@ -2,25 +2,18 @@
 """
 RQ3: Are model performance and key predictors consistent across demographic subgroups?
 
-Single-output report:
-  artifacts/interpretability/rq3_subgroups_report.json
+Single-output report (JSON) + flat table (CSV):
+  - artifacts/interpretability/rq3_subgroups_report.json
+  - artifacts/interpretability/rq3_subgroups_table.csv
 
-Contents:
-  - Per subgroup (gender/year/employment x level) and per model:
+Содержимое JSON:
+  - По каждой подгруппе (gender/year/employment x level) и по каждой модели:
       n, prevalence, PR-AUC, ROC-AUC, F1, Recall@thr, threshold
       top5 features by permutation importance (neg_log_loss) with their scores
-  - Consistency summary (per model):
-      variability of metrics across subgroups (min/max/mean/std)
-      mean pairwise Jaccard overlap of Top-5 feature sets across subgroups
+  - Сводка (по моделям): вариативность метрик, средний парный Jaccard Top-5
 
-Assumptions:
-  * Saved models in artifacts/models: rf.joblib, xgb.joblib, xgb_tuned.joblib, mlp.joblib (subset allowed).
-  * Test metadata in artifacts/metadata/subgroups_test.csv with columns: gender,year,employment
-  * Test data in data/processed: X_test.csv, y_test.csv ; optional feature_names.csv
-
-Robustness:
-  * Metrics that require both classes are returned as null if subgroup is single-class.
-  * Permutation importance uses scoring='neg_log_loss' (well-defined even for single-class).
+Плоская таблица CSV:
+  Columns = [Group, Level, n, Prevalence, Model, PR_AUC, ROC_AUC, F1, Recall@Thr, Thr, Top5]
 """
 
 import argparse, json, pathlib, warnings, sys
@@ -69,7 +62,6 @@ def load_models(models_dir: str):
 
 # ---------- Metrics ----------
 def compute_metrics(y_true, proba, thr):
-    # Handle degenerate cases
     uniq = np.unique(y_true)
     pr_auc = float("nan")
     roc_auc = float("nan")
@@ -96,16 +88,8 @@ def compute_metrics(y_true, proba, thr):
             rec_at_thr = float(rec[1]) if len(rec) > 1 else float("nan")
         except Exception:
             rec_at_thr = float("nan")
-    else:
-        # single-class subgroup: define only F1/Recall as NaN, keep PR/ROC as NaN
-        pass
 
-    return {
-        "PR_AUC": pr_auc,
-        "ROC_AUC": roc_auc,
-        "F1": f1,
-        "Recall@Thr": rec_at_thr
-    }
+    return {"PR_AUC": pr_auc, "ROC_AUC": roc_auc, "F1": f1, "Recall@Thr": rec_at_thr}
 
 def prevalence(y):
     y = np.asarray(y).astype(int)
@@ -194,7 +178,7 @@ def main():
 
     # Prepare subgroups
     subgroup_vars = ["gender", "year", "employment"]
-    subgroups_index = {}  # { "gender": {level: idx_array}, ...}
+    subgroups_index = {}
     for var in subgroup_vars:
         subgroups_index[var] = {}
         levels = pd.unique(df_meta[var])
@@ -213,9 +197,12 @@ def main():
             "seed": args.seed,
             "n_repeats_permutation": args.n_repeats
         },
-        "subgroups": {},   # will be filled per variable
-        "consistency": {}  # per model summaries across subgroups
+        "subgroups": {},
+        "consistency": {}
     }
+
+    # будем одновременно собирать строки для плоской таблицы
+    flat_rows = []
 
     # Per-subgroup evaluation
     for var in subgroup_vars:
@@ -236,7 +223,6 @@ def main():
                     s = model.decision_function(Xg)
                     proba = 1.0 / (1.0 + np.exp(-s))
                 else:
-                    # last resort
                     proba = np.zeros(Xg.shape[0], dtype=float)
 
                 mets = compute_metrics(yg, proba, args.thr)
@@ -244,20 +230,37 @@ def main():
                 top5, full_sorted = permutation_importance_safe(model, Xg, yg, feature_names,
                                                                 n_repeats=args.n_repeats, seed=args.seed)
 
-                entry["models"][mname] = {
-                    "metrics": mets,
-                    "top5": top5
-                }
+                entry["models"][mname] = {"metrics": mets, "top5": top5}
+
+                # ---- строка для плоской таблицы ----
+                def _r(x):
+                    try:
+                        return round(float(x), 4)
+                    except Exception:
+                        return None
+                top5_txt = ", ".join([t["feature"] for t in top5]) if top5 else ""
+                flat_rows.append({
+                    "Group": var,
+                    "Level": lv,
+                    "n": int(Xg.shape[0]),
+                    "Prevalence": _r(entry["prevalence"]),
+                    "Model": mname,
+                    "PR_AUC": _r(mets.get("PR_AUC")),
+                    "ROC_AUC": _r(mets.get("ROC_AUC")),
+                    "F1": _r(mets.get("F1")),
+                    "Recall@Thr": _r(mets.get("Recall@Thr")),
+                    "Thr": args.thr,
+                    "Top5": top5_txt
+                })
+
             report["subgroups"][var][lv] = entry
 
     # Consistency summaries per model
-    # 1) variability of metrics across subgroups (for each variable separately and pooled)
     metrics_names = ["PR_AUC", "ROC_AUC", "F1", "Recall@Thr"]
     for mname in models.keys():
         cons = {"by_variable": {}, "pooled": {}}
 
         pooled_vals = {mn: [] for mn in metrics_names}
-        # by variable
         for var in subgroup_vars:
             vstats = {}
             for mn in metrics_names:
@@ -268,18 +271,15 @@ def main():
                     pooled_vals[mn].append(val)
                 vstats[mn] = summary_variation(vals)
             cons["by_variable"][var] = vstats
-        # pooled across all subgroup splits
         for mn in metrics_names:
             cons["pooled"][mn] = summary_variation(pooled_vals[mn])
 
-        # 2) mean pairwise Jaccard overlap of Top-5 across subgroup levels (per variable)
         jacc = {}
         for var in subgroup_vars:
             top_sets = []
             for lv, entry in report["subgroups"][var].items():
                 feats = [it["feature"] for it in entry["models"][mname]["top5"]]
                 top_sets.append(feats)
-            # pairwise
             if len(top_sets) >= 2:
                 pairs = []
                 for i in range(len(top_sets)):
@@ -292,12 +292,34 @@ def main():
 
         report["consistency"][mname] = cons
 
-    # Save single-file report
+    # Save JSON
     out_dir = pathlib.Path(args.artifacts_dir) / "interpretability"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "rq3_subgroups_report.json"
-    out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))
-    print(f"[OK] RQ3 report saved: {out_path}")
+    out_json = out_dir / "rq3_subgroups_report.json"
+    out_json.write_text(json.dumps(report, indent=2, ensure_ascii=False))
+    print(f"[OK] RQ3 report saved: {out_json}")
+
+    # Save flat table CSV
+    df = pd.DataFrame(flat_rows)
+    # человекочитаемые имена моделей
+    name_map = {
+        "logreg": "LogisticRegression",
+        "rf": "RandomForest",
+        "xgb": "XGBoost",
+        "xgb_tuned": "XGBoost_tuned",
+        "mlp": "ANN"
+    }
+    df["Model"] = df["Model"].map(name_map).fillna(df["Model"])
+    df.sort_values(["Group", "Level", "Model"], inplace=True)
+    out_csv = out_dir / "rq3_subgroups_table.csv"
+    df.to_csv(out_csv, index=False)
+    print(f"[OK] Flat table saved: {out_csv}")
+
+    # Pretty preview in console
+    with pd.option_context('display.max_rows', 80, 'display.width', 140):
+        print("\n=== RQ3 Subgroups (preview) ===")
+        print(df.head(30).to_string(index=False))
+
 
 if __name__ == "__main__":
     main()

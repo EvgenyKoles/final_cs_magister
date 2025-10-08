@@ -192,5 +192,37 @@ python scripts/rq3_subgroups.py --processed_dir data/processed --models_dir arti
 
 
 -----
-python scripts/06_rq1_make_table.py --metrics_dir artifacts/metrics --out_csv artifacts/metrics/rq1_summary.csv
-rq1_make_table.py 
+python scripts/rq1_make_table.py --metrics_dir artifacts/metrics --out_csv artifacts/metrics/rq1_summary.csv
+
+
+---------------------------------------------------
+
+финалочка
+
+python scripts/01_build_label.py 
+python scripts/02_preprocess_split.py
+python scripts/03_train_logreg.py
+
+C:\Users\08406776\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\statsmodels\base\model.py:595: HessianInversionWarning: Inverting hessian failed, no bse or cov_params available
+  warnings.warn('Inverting hessian failed, no bse or cov_params '
+
+сможем обьяснить
+
+python scripts/04_train_model.py --model rf  --save_probas --save_model
+python scripts/04_train_model.py --model mlp --save_probas --save_model
+python scripts/04_train_model.py --model xgb --save_probas --save_model
+python scripts/05_tune_xgb.py --trials 120 --cv_folds 4 --cv_repeats 8 --agg mean_minus_std --agg_alpha 1.0 --booster_mode gbtree --spw_mode sqrt --es_rounds 0 --search_space light --train_on train --save_model --save_probas
+
+
+python scripts/rq1_make_table.py --metrics_dir artifacts/metrics --out_csv artifacts/metrics/rq1_summary.csv
+вывод metrics/rq1_summary
+
+
+python scripts/rq2_feature_importance.py --processed_dir data/processed --artifacts_dir artifacts --eval_split test --bg_size 200 --max_eval 2000 --bootstrap 300
+вывод 
+artifacts/intepretability/rq2_top5_all_models
+artifacts/intepretability/rq2_top5_pivot
+
+python scripts/rq3_subgroups.py --processed_dir data/processed --models_dir artifacts/models --metadata_file artifacts/metadata/subgroups_test.csv --artifacts_dir artifacts --thr 0.35 --n_repeats 15
+
+вывод artifacts/intepretability/rq3_subgroups_table

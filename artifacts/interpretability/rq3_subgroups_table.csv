@@ -1,0 +1,45 @@
+Group,Level,n,Prevalence,Model,PR_AUC,ROC_AUC,F1,Recall@Thr,Thr,Top5
+employment,0,85,0.0353,ANN,0.0962,0.6098,0.1081,0.6667,0.35,"stai_t, cesd, psyt, year, qcae_cog"
+employment,0,85,0.0353,RandomForest,0.0944,0.7683,0.0,0.0,0.35,"amsp, jspe, qcae_aff, stai_t, age"
+employment,0,85,0.0353,XGBoost,0.162,0.748,0.0,0.0,0.35,"amsp, qcae_aff, stai_t, jspe, psyt"
+employment,0,85,0.0353,XGBoost_tuned,0.2178,0.752,0.3333,0.3333,0.35,"amsp, stai_t, jspe, psyt, erec_mean"
+employment,1,48,0.0625,ANN,0.2991,0.8815,0.375,1.0,0.35,"erec_mean, cesd, amsp, stai_t, jspe"
+employment,1,48,0.0625,RandomForest,0.2146,0.5333,0.0,0.0,0.35,"health_3, age, amsp, year, psyt"
+employment,1,48,0.0625,XGBoost,0.2146,0.5185,0.0,0.0,0.35,"cesd, age, amsp, stai_t, health_3"
+employment,1,48,0.0625,XGBoost_tuned,0.3786,0.4963,0.0,0.0,0.35,"age, cesd, health_3, amsp, glang_1"
+gender,1,40,0.025,ANN,0.2,0.8974,0.0952,1.0,0.35,"psyt, year, health_3, stud_h, qcae_cog"
+gender,1,40,0.025,RandomForest,0.125,0.8205,0.0,0.0,0.35,"stai_t, glang_1, age, erec_mean, jspe"
+gender,1,40,0.025,XGBoost,0.0909,0.7436,0.0,0.0,0.35,"stai_t, stud_h, health_2, psyt, glang_1"
+gender,1,40,0.025,XGBoost_tuned,0.0833,0.7179,0.0,0.0,0.35,"stai_t, stud_h, age, glang_1, jspe"
+gender,2,92,0.0435,ANN,0.225,0.8864,0.2581,1.0,0.35,"stai_t, cesd, amsp, age, year"
+gender,2,92,0.0435,RandomForest,0.0968,0.5724,0.0,0.0,0.35,"health_3, year, amsp, age, job_1"
+gender,2,92,0.0435,XGBoost,0.1928,0.625,0.0,0.0,0.35,"amsp, age, jspe, psyt, year"
+gender,2,92,0.0435,XGBoost_tuned,0.2746,0.608,0.2857,0.25,0.35,"age, jspe, health_4, health_3, psyt"
+gender,3,1,1.0,ANN,,,,,0.35,
+gender,3,1,1.0,RandomForest,,,,,0.35,
+gender,3,1,1.0,XGBoost,,,,,0.35,
+gender,3,1,1.0,XGBoost_tuned,,,,,0.35,
+year,1,30,0.0333,ANN,0.5,0.9655,0.2,1.0,0.35,"stai_t, cesd, amsp, health_5, health_4"
+year,1,30,0.0333,RandomForest,0.0667,0.5517,0.0,0.0,0.35,"stai_t, glang_1, jspe, health_4, age"
+year,1,30,0.0333,XGBoost,0.0714,0.5517,0.0,0.0,0.35,"stai_t, amsp, jspe, health_2, stud_h"
+year,1,30,0.0333,XGBoost_tuned,0.0625,0.4828,0.0,0.0,0.35,"stai_t, cesd, amsp, jspe, health_2"
+year,2,23,0.0,ANN,,,,,0.35,
+year,2,23,0.0,RandomForest,,,,,0.35,
+year,2,23,0.0,XGBoost,,,,,0.35,
+year,2,23,0.0,XGBoost_tuned,,,,,0.35,
+year,3,19,0.1053,ANN,0.2083,0.6765,0.3636,1.0,0.35,"stai_t, cesd, qcae_cog, stud_h, age"
+year,3,19,0.1053,RandomForest,0.2255,0.5147,0.0,0.0,0.35,"age, psyt, job_1, amsp, sex_1"
+year,3,19,0.1053,XGBoost,0.3125,0.5588,0.0,0.0,0.35,"psyt, stud_h, jspe, age, glang_1"
+year,3,19,0.1053,XGBoost_tuned,0.3026,0.4706,0.5,0.5,0.35,"psyt, jspe, glang_1, stud_h, age"
+year,4,16,0.125,ANN,0.3125,0.4643,0.25,0.5,0.35,"stai_t, cesd, sex_1, jspe, health_4"
+year,4,16,0.125,RandomForest,0.1833,0.5,0.0,0.0,0.35,"health_3, amsp, jspe, erec_mean, qcae_cog"
+year,4,16,0.125,XGBoost,0.1458,0.3929,0.0,0.0,0.35,"jspe, erec_mean, health_3, qcae_cog, age"
+year,4,16,0.125,XGBoost_tuned,0.1623,0.4643,0.0,0.0,0.35,"health_3, jspe, erec_mean, health_4, qcae_cog"
+year,5,26,0.0,ANN,,,,,0.35,
+year,5,26,0.0,RandomForest,,,,,0.35,
+year,5,26,0.0,XGBoost,,,,,0.35,
+year,5,26,0.0,XGBoost_tuned,,,,,0.35,
+year,6,19,0.0526,ANN,1.0,1.0,0.25,1.0,0.35,"erec_mean, psyt, stud_h, sex_1, cesd"
+year,6,19,0.0526,RandomForest,0.5,0.9444,0.0,0.0,0.35,"cesd, amsp, stai_t, age, sex_2"
+year,6,19,0.0526,XGBoost,0.5,0.9444,0.0,0.0,0.35,"cesd, amsp, stai_t, age, glang_1"
+year,6,19,0.0526,XGBoost_tuned,0.5,0.9444,0.0,0.0,0.35,"cesd, amsp, stai_t, age, health_3"
