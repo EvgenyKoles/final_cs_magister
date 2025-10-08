@@ -1,14 +1,7 @@
-# -*- coding: utf-8 -*-
+
 """
 05_tune_xgb.py
-XGBoost random search by CV with target metric PR-AUC (average precision).
 
-- RepeatedStratifiedKFold -> более стабильная оценка.
-- Агрегатор метрик: mean / median / mean_minus_std (penalized).
-- Гибкие флаги: booster, scale_pos_weight, Early Stop в поиске и в финальном обучении.
-- Артефакты под RQ/H (минимально необходимые + свод тюнинга).
-
-Пример:
 python scripts/05_tune_xgb.py \
   --trials 120 --cv_folds 4 --cv_repeats 8 \
   --agg mean_minus_std --agg_alpha 1.0 \
@@ -219,7 +212,7 @@ def train_final_and_eval(X_tr: np.ndarray, y_tr: np.ndarray,
     model = build_model_base(config, y_final, seed)
 
     if es_rounds_final > 0:
-        # внутренний "holdout" из финального набора
+        # internal "holdout" from the final set
         rs = np.random.RandomState(seed+777)
         idx = rs.permutation(len(y_final))
         cut = max(1, int(len(y_final) * es_split))
@@ -256,18 +249,18 @@ def main():
     ap.add_argument("--save_model", action="store_true")
     ap.add_argument("--save_probas", action="store_true")
 
-    # пространство поиска
+    # search space
     ap.add_argument("--search_space", choices=["light","wide"], default="light")
     ap.add_argument("--spw_mode", choices=["search","auto","sqrt","one"], default="search")
     ap.add_argument("--booster_mode", choices=["both","gbtree","dart"], default="gbtree")
-    ap.add_argument("--es_rounds", type=int, default=0, help="ES в поиске (0=off)")
+    ap.add_argument("--es_rounds", type=int, default=0, help="ES in search (0=off)")
 
-    # агрегирование метрик CV
+    # aggregation of CV metrics
     ap.add_argument("--agg", choices=["mean","median","mean_minus_std"], default="mean_minus_std")
     ap.add_argument("--agg_alpha", type=float, default=0.5)
 
-    # финальное обучение
-    ap.add_argument("--es_rounds_final", type=int, default=0, help="ES при финальном обучении (0=off)")
+    # final training
+    ap.add_argument("--es_rounds_final", type=int, default=0, help="ES at final training (0=off)")
     ap.add_argument("--es_split", type=float, default=0.1)
 
     args = ap.parse_args()
@@ -317,7 +310,7 @@ def main():
     (art/"interpretability").mkdir(parents=True, exist_ok=True)
     (art/"models").mkdir(parents=True, exist_ok=True)
 
-    # leaderboard + summary (полезно для раздела Methodology/Results)
+    # leaderboard + summary 
     lb = pd.DataFrame(trials)
     lb_path = art/"metrics"/"xgb_tuning_leaderboard.csv"
     lb.to_csv(lb_path, index=False)
@@ -336,7 +329,7 @@ def main():
     }
     (art/"metrics"/"xgb_tuning_summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
 
-    # минимальный JSON под RQ1 (стандарт, как в 03/04)
+    # JSON for RQ1 
     eval_min = {
         "model": "xgb_tuned",
         "threshold_for_report": args.thr,
@@ -346,17 +339,17 @@ def main():
     }
     (art/"metrics"/"xgb_tuned_eval.json").write_text(json.dumps(eval_min, indent=2, ensure_ascii=False))
 
-    # save probas (нужны для 06)
+    # save probas 
     if args.save_probas:
         pd.DataFrame({"y": y_val,  "proba": result["proba_val"]}).to_csv(art/"preds"/"xgb_tuned_val.csv", index=False)
         pd.DataFrame({"y": y_test, "proba": result["proba_test"]}).to_csv(art/"preds"/"xgb_tuned_test.csv", index=False)
 
-    # save model (опционально)
+    # save model 
     if args.save_model:
         import joblib
         joblib.dump(result["model"], art/"models"/"xgb_tuned.joblib")
 
-    # feature importances (gain) -> interpretability
+    # feature importances
     try:
         booster = result["model"].get_booster()
         score = booster.get_score(importance_type="gain")  # dict: f{idx} -> gain

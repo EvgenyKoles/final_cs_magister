@@ -1,17 +1,7 @@
 
-# -*- coding: utf-8 -*-
-"""
-Logistic Regression baseline with:
-- CV over C/penalty optimizing Average Precision (PR-AUC) for prediction quality (RQ1).
-- Optional isotonic calibration for probabilities.
-- Inferential statistics (coef, SE, z, p-value, 95% CI) via statsmodels.Logit for H1/H3.
-Artifacts saved only for RQ/H.
 
-This version hardens the statsmodels block against non-convergence by:
-- Removing zero-variance and near-duplicate features (|corr| > 0.999).
-- Standardizing features (effects interpreted per +1 SD).
-- Using LBFGS/BFGS with higher iteration limits and recording convergence flags.
-- Falling back to robust covariance and GLM Binomial if needed.
+"""
+Logistic Regression 
 """
 
 import argparse, json, pathlib, warnings

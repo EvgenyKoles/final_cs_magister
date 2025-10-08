@@ -1,16 +1,9 @@
-# -*- coding: utf-8 -*-
+
 """
 02_preprocess_split.py
 
-Подготовка признаков и стратифицированный сплит 70/15/15.
-Сохраняет:
-- X_train.csv, X_val.csv, X_test.csv  (OHE + стандартизация)
-- y_train.csv, y_val.csv, y_test.csv
-- feature_names.csv
-- subgroups_{train,val,test}.csv  (колонки: gender, year, employment) в:
-    artifacts/metadata/  и дублирует в  data/processed/
+Feature preparation and stratified split 70/15/15.
 
-Совместимо с последующими скриптами 03/04/05/06.
 """
 
 import argparse, pathlib, numpy as np, pandas as pd
@@ -23,9 +16,9 @@ from sklearn.utils import shuffle
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", default="data/processed/_labeled.csv", help="файл из шага 01")
-    ap.add_argument("--outdir", default="data/processed", help="куда класть X_*/y_* и feature_names")
-    ap.add_argument("--artifacts_dir", default="artifacts", help="куда класть subgroups_* для агрегатора 06")
+    ap.add_argument("--input", default="data/processed/_labeled.csv", help="file from step 01")
+    ap.add_argument("--outdir", default="data/processed", help="where to put X_*/y_* и feature_names")
+    ap.add_argument("--artifacts_dir", default="artifacts", help="where to put subgroups_* for aggregator 06")
     ap.add_argument("--test_size", type=float, default=0.15)
     ap.add_argument("--val_size",  type=float, default=0.15)
     ap.add_argument("--seed", type=int, default=42)
@@ -39,9 +32,9 @@ def main():
     df.columns = [c.strip().lower() for c in df.columns]
 
     if "label" not in df.columns:
-        raise SystemExit("Нет столбца 'label'. Сначала запусти 01_build_label.py.")
+        raise SystemExit("No 'label' column. Run first 01_build_label.py.")
 
-    # ---- ожидаемые признаки
+    # ---- expected signs
     numeric_expected = {
         "age","year","stud_h","psyt","jspe","qcae_cog","qcae_aff",
         "amsp","erec_mean","cesd","stai_t"
@@ -51,28 +44,28 @@ def main():
     numeric = [c for c in df.columns if c in numeric_expected]
     categorical = [c for c in df.columns if c in categorical_expected]
 
-    # если список пуст, fallback: все числовые, кроме label
+    # if the list is empty, fallback: all numeric except label
     if not numeric:
         numeric = [c for c in df.columns if c != "label" and pd.api.types.is_numeric_dtype(df[c])]
-    # категориальные оставим только из известного набора, чтобы избежать взрыва OHE
+    # Categorical leave only from known set to avoid OHE explosion
     categorical = [c for c in categorical if c in df.columns]
 
-    # ---- формируем X, y
+    # ---- form X, y
     used_cols = [c for c in numeric + categorical if c in df.columns]
     X = df[used_cols].copy()
     y = df["label"].astype(int)
 
-    # ---- чистка: удаляем строки с пропусками по используемым признакам/лейблу
+    # ---- Cleanup: remove the skips for the used features/label
     data = X.join(y.rename("label"))
     before = len(data)
     data = data.dropna()
     if len(data) < before:
-        print(f"[INFO] удалены строки из-за NaN: {before - len(data)}")
+        print(f"[INFO] strings are removed because of NaN: {before - len(data)}")
 
     X, y = data.drop(columns=["label"]), data["label"]
 
-    # ---- сплит 70/15/15 (стратифицированный)
-    X = shuffle(X, random_state=args.seed)   # фиксируем порядок для воспроизводимости
+    # ---- split 70/15/15 (stratified)
+    X = shuffle(X, random_state=args.seed)   # fix order for reproducibility
     y = y.loc[X.index]
 
     X_tmp, X_test, y_tmp, y_test = train_test_split(
@@ -88,7 +81,7 @@ def main():
         v, c = np.unique(s, return_counts=True); return {int(k): int(vv) for k, vv in zip(v, c)}
     print(f"[INFO] Class balance (train): {distr(y_train)} | (val): {distr(y_val)} | (test): {distr(y_test)}")
 
-    # ---- подгруппы для RQ3: gender/year/employment из «сырых» колонок до OHE
+    # ---- subgroups for RQ3: gender/year/employment from "raw" columns to OHE
     def extract_subgroups(df_part: pd.DataFrame) -> pd.DataFrame:
         out = pd.DataFrame(index=df_part.index)
         # gender
@@ -113,7 +106,7 @@ def main():
         else:
             out["employment"] = pd.NA
 
-        # приведение к строкам, чтобы значения стабильно группировались
+        # leading to rows so that the values are stably grouped
         for c in ["gender","year","employment"]:
             out[c] = out[c].astype(str)
         return out.reset_index(drop=True)
@@ -122,11 +115,11 @@ def main():
     sub_val   = extract_subgroups(X_val)
     sub_test  = extract_subgroups(X_test)
 
-    # ---- препроцессинг: StandardScaler (num) + OneHotEncoder (cat)
+    # ---- Preprocessing: StandardScaler (num) + OneHotEncoder (cat)
     try:
         ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
     except TypeError:
-        # совместимость со старыми sklearn: параметр назывался sparse
+        # compatibility with old sklearn: parameter was called sparse
         ohe = OneHotEncoder(handle_unknown="ignore", sparse=False)
 
     ct = ColumnTransformer(
@@ -142,7 +135,7 @@ def main():
     X_val_t   = pipe.transform(X_val)
     X_test_t  = pipe.transform(X_test)
 
-    # ---- имена фич
+    # ---- names
     feature_names = []
     if numeric:
         feature_names += [c for c in numeric if c in X_train.columns]
@@ -152,7 +145,7 @@ def main():
             cats_cols = [c for c in categorical if c in X_train.columns]
             feature_names += list(ohe_step.get_feature_names_out(cats_cols))
 
-    # ---- сохранение матриц/лейблов/имен
+    # ---- saving matrices/labels/names
     np.savetxt(outdir/"X_train.csv", X_train_t, delimiter=",")
     np.savetxt(outdir/"X_val.csv",   X_val_t,   delimiter=",")
     np.savetxt(outdir/"X_test.csv",  X_test_t,  delimiter=",")
@@ -161,12 +154,13 @@ def main():
     y_test.to_csv(outdir/"y_test.csv",   index=False)
     pd.Series(feature_names).to_csv(outdir/"feature_names.csv", index=False, header=False)
 
-    # ---- сохранение подгрупп (в том же порядке, что X_*)
-    # в artifacts/metadata (основной путь для 06)
+    # ---- save subgroups (in the same order as x_*)
+    # in artifacts/metadata (main path for 06)
+
     sub_train.to_csv(art_meta/"subgroups_train.csv", index=False)
     sub_val.to_csv(  art_meta/"subgroups_val.csv",   index=False)
     sub_test.to_csv( art_meta/"subgroups_test.csv",  index=False)
-    # дублируем в processed для удобства
+    # duplicate to processed for convenience
     sub_train.to_csv(outdir/"subgroups_train.csv", index=False)
     sub_val.to_csv(  outdir/"subgroups_val.csv",   index=False)
     sub_test.to_csv( outdir/"subgroups_test.csv",  index=False)

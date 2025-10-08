@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-RQ1 summary table:
-Собирает PR-AUC, ROC-AUC, F1, Recall@Thr для валид. и теста из *_eval.json
-и сохраняет один CSV-файл: artifacts/metrics/rq1_summary.csv
+RQ1 
 """
 
 import argparse, json, pathlib, sys
@@ -22,7 +20,7 @@ def load_json(p):
         return json.load(f)
 
 def model_label(d):
-    # используем 'model' и/или 'variant'
+    # use 'model' and/or 'variant
     m = d.get("model", "")
     v = d.get("variant", "")
     key = (v or m or "").lower()
@@ -54,14 +52,14 @@ def extract_rows(d, fname):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--metrics_dir", default="artifacts/metrics", help="где лежат *_eval.json")
-    ap.add_argument("--out_csv", default="artifacts/metrics/rq1_summary.csv", help="куда сохранить итоговую таблицу")
+    ap.add_argument("--metrics_dir", default="artifacts/metrics", help="where they *_eval.json")
+    ap.add_argument("--out_csv", default="artifacts/metrics/rq1_summary.csv", help="where to save the final table")
     args = ap.parse_args()
 
     md = pathlib.Path(args.metrics_dir)
     files = sorted(list(md.glob("*_eval.json")))
     if not files:
-        print(f"[ERROR] Не найдены *_eval.json в {md}")
+        print(f"[ERROR] not found  *_eval.json в {md}")
         sys.exit(1)
 
     all_rows = []
@@ -70,13 +68,13 @@ def main():
             d = load_json(f)
             all_rows.extend(extract_rows(d, f))
         except Exception as e:
-            print(f"[WARN] Пропускаю {f.name}: {type(e).__name__}: {e}")
+            print(f"[WARN] skip {f.name}: {type(e).__name__}: {e}")
 
     if not all_rows:
-        print("[ERROR] Нет валидных метрик для сборки.")
+        print("[ERROR] No metric for assembly.")
         sys.exit(1)
 
-    # упорядочим: по Split (VAL, TEST), затем по модели
+    # ordered: by Split (VAL, TEST), then by model
     df = pd.DataFrame(all_rows)
     split_order = {"VAL": 0, "TEST": 1}
     df["split_order"] = df["Split"].map(split_order).fillna(99)
@@ -88,7 +86,7 @@ def main():
     df.to_csv(out_path, index=False)
     print(f"[OK] RQ1 summary saved: {out_path}")
 
-    # одновременный «сухой» вывод в консоль
+    #  output to console
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 120):
         print("\n=== RQ1 summary (VAL & TEST) ===")
         print(df.to_string(index=False))

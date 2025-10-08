@@ -226,3 +226,6 @@ artifacts/intepretability/rq2_top5_pivot
 python scripts/rq3_subgroups.py --processed_dir data/processed --models_dir artifacts/models --metadata_file artifacts/metadata/subgroups_test.csv --artifacts_dir artifacts --thr 0.35 --n_repeats 15
 
 вывод artifacts/intepretability/rq3_subgroups_table
+
+
+графики

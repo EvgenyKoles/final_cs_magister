@@ -1,19 +1,8 @@
-# -*- coding: utf-8 -*-
+
 """
 RQ3: Are model performance and key predictors consistent across demographic subgroups?
 
-Single-output report (JSON) + flat table (CSV):
-  - artifacts/interpretability/rq3_subgroups_report.json
-  - artifacts/interpretability/rq3_subgroups_table.csv
 
-Содержимое JSON:
-  - По каждой подгруппе (gender/year/employment x level) и по каждой модели:
-      n, prevalence, PR-AUC, ROC-AUC, F1, Recall@thr, threshold
-      top5 features by permutation importance (neg_log_loss) with their scores
-  - Сводка (по моделям): вариативность метрик, средний парный Jaccard Top-5
-
-Плоская таблица CSV:
-  Columns = [Group, Level, n, Prevalence, Model, PR_AUC, ROC_AUC, F1, Recall@Thr, Thr, Top5]
 """
 
 import argparse, json, pathlib, warnings, sys
@@ -201,7 +190,7 @@ def main():
         "consistency": {}
     }
 
-    # будем одновременно собирать строки для плоской таблицы
+    # we will simultaneously collect rows for flat table
     flat_rows = []
 
     # Per-subgroup evaluation
@@ -232,7 +221,7 @@ def main():
 
                 entry["models"][mname] = {"metrics": mets, "top5": top5}
 
-                # ---- строка для плоской таблицы ----
+                # ---- Line for flat table ---
                 def _r(x):
                     try:
                         return round(float(x), 4)
@@ -301,7 +290,7 @@ def main():
 
     # Save flat table CSV
     df = pd.DataFrame(flat_rows)
-    # человекочитаемые имена моделей
+    # model names
     name_map = {
         "logreg": "LogisticRegression",
         "rf": "RandomForest",

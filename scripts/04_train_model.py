@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-04_train_model.py
-Unified trainer for RF / MLP (/ optional XGB baseline):
-- Saves probabilities for train/val/test (needed for RQ1 and threshold selection in 06).
-- Saves minimal metrics JSON (PR-AUC, ROC-AUC, F1, Recall@Thr).
-- Saves feature importances where applicable (RF/XGB) for RQ2.
+train_model
 """
 
 import argparse, json, pathlib, warnings
@@ -73,7 +69,7 @@ def build_model(name: str, y_train):
     name = name.lower()
     if name == "rf":
         from sklearn.ensemble import RandomForestClassifier
-        # balanced_subsample — хороший дефолт под дисбаланс
+        # balanced_subsample — good imbalance default
         return "rf", RandomForestClassifier(
             n_estimators=500, max_depth=None, min_samples_leaf=1,
             n_jobs=-1, random_state=42, class_weight="balanced_subsample"

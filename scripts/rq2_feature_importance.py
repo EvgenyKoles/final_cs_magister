@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
+
 """
 RQ2: Which predictors contribute most? — feature importance with a single Top-5 table across models.
 
-Models: Logistic Regression (LR), Random Forest (RF), XGBoost (XGB; optional), MLP.
+
 Outputs (artifacts/interpretability):
   - rq2_shap_summary_<model>.csv, rq2_shap_rank_<model>.csv        (per-model)
   - rq2_consensus_rank.csv                                         (mean rank across models)
@@ -10,12 +10,7 @@ Outputs (artifacts/interpretability):
   - rq2_top5_pivot.csv                                             (pivoted Top-5 table)
   - rq2_method_report.json                                         (what ran, any fallbacks)
 
-Robustness for small/imbalanced datasets:
-  * If SHAP unavailable or fails, fallback to permutation importance with scoring="neg_log_loss".
-  * Stratified subsampling for background/eval subsets.
-  * Direction of effect:
-      - LR: sign of standardized coefficients.
-      - Others: sign of rank-correlation (pseudo-Spearman) between feature and predicted risk.
+
 """
 \
 import argparse, json, pathlib, warnings
