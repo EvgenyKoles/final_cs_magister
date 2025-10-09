@@ -227,5 +227,5 @@ python scripts/rq3_subgroups.py --processed_dir data/processed --models_dir arti
 
 вывод artifacts/intepretability/rq3_subgroups_table
 
-
 графики
+python scripts/06_visualize.py
