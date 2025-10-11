@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-06_visualize_compact.py — по одному графику на каждый RQ, показ сразу всех трёх окон.
+06_visualize_compact.py
 
-Читает:
-  - RQ1:  artifacts/metrics/rq1_summary.csv  (авто-фолбэк: metrics/rq1_summary.csv)
+Read:
+  - RQ1:  artifacts/metrics/rq1_summary.csv
   - RQ2:  artifacts/interpretability/rq2_top5_all_models.csv
           artifacts/interpretability/rq2_top5_pivot.csv
-          (авто-фолбэк на 'intepretability' при опечатке папки)
   - RQ3:  artifacts/interpretability/rq3_subgroups_table.csv
 
-Строит:
-  1) RQ1 — сгруппированные столбики PR-AUC по моделям (VAL и TEST рядом).
-  2) RQ2 — консенсус-топ признаков (Top-10 по среднему рангу между моделями).
-  3) RQ3 — средний PR-AUC по всем моделям для каждой подгруппы (gender/year/employment × level).
+Build
+1) RQ1 - grouped PR-AUC columns by models (VAL and TEST side by side).
+2) RQ2 - the consensus-top of features (Top-10 on the average rank between models).
+3) RQ3 is the average PR-AUC across all models for each subgroup (gender/year/employment level).
 
-Опционально сохраняет PNG (--save) в artifacts/figures.
+Optionally saves PNG (--save) to artifacts/figures.
 """
 
 import argparse, pathlib
@@ -25,7 +24,6 @@ import matplotlib.pyplot as plt
 
 # ---------- helpers ----------
 def _fallback(path: pathlib.Path) -> pathlib.Path:
-    """Фолбэк между interpretability/intepretability и альтернативным корнем."""
     s = str(path)
     if path.exists():
         return path
@@ -65,21 +63,21 @@ def _model_name(m):
     return mapping.get(str(m), str(m))
 
 
-# ---------- RQ1: один график ----------
+# ---------- RQ1----------
 def figure_rq1(rq1_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     rq1_csv = _fallback(rq1_csv)
     df = pd.read_csv(rq1_csv)
     df["Model"] = df["Model"].map(_model_name)
 
-    # порядок моделей по TEST PR-AUC (если есть), иначе по VAL
+    # order of models by TEST PR-AUC (if any), otherwise by VAL
     order = (df[df["Split"]=="TEST"]
              .sort_values("PR_AUC", ascending=False)["Model"].tolist())
     if not order:
         order = (df[df["Split"]=="VAL"]
                  .sort_values("PR_AUC", ascending=False)["Model"].tolist())
-    order = list(dict.fromkeys(order))  # уникальные, сохраняем порядок
+    order = list(dict.fromkeys(order))  
 
-    # сформируем матрицу [модели x 2 сплита]
+  # form matrix [x 2 splice models]
     models = order or sorted(df["Model"].unique())
     splits = ["VAL", "TEST"]
     mat = np.full((len(models), len(splits)), np.nan)
@@ -97,7 +95,7 @@ def figure_rq1(rq1_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     for j, s in enumerate(splits):
         xj = x + (j-0.5)*width
         plt.bar(xj, mat[:, j], width=width, label=s)
-    # линия базовой распространённости (берём тестовую, если есть)
+    # the baseline of prevalence (we take a test, if any)
     prev = prevalence.get("TEST") if np.isfinite(prevalence.get("TEST", np.nan)) else prevalence.get("VAL")
     if np.isfinite(prev):
         plt.axhline(prev, linestyle="--", linewidth=1.2, label=f"Prevalence={prev:.3f}")
@@ -110,14 +108,14 @@ def figure_rq1(rq1_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     return fig
 
 
-# ---------- RQ2: один график ----------
+# ---------- RQ2 ----------
 def figure_rq2(pivot_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     pivot_csv = _fallback(pivot_csv)
     pv = pd.read_csv(pivot_csv)
-    # берём все столбцы рангов
+    #take all rank columns
     rank_cols = [c for c in pv.columns if c.startswith("rank_")]
     if not rank_cols:
-        raise SystemExit("[RQ2] В pivot нет столбцов rank_*")
+        raise SystemExit("[RQ2] in pivot no columns rank_*")
     pv["rank_mean"] = pv[rank_cols].mean(axis=1, skipna=True)
     pv = pv.sort_values("rank_mean").head(10)
 
@@ -132,26 +130,26 @@ def figure_rq2(pivot_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     return fig
 
 
-# ---------- RQ3: один график ----------
+# ---------- RQ3 ----------
 def figure_rq3(tbl_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     tbl_csv = _fallback(tbl_csv)
     df = pd.read_csv(tbl_csv)
     needed = {"Group", "Level", "Model", "PR_AUC", "Prevalence", "n"}
     if not needed.issubset(df.columns):
-        raise SystemExit(f"[RQ3] Не хватает колонок в {tbl_csv}")
+        raise SystemExit(f"[RQ3] Not enough columns in {tbl_csv}")
 
-    # средний PR-AUC по моделям для каждой подгруппы (Group × Level)
+    # Average PR-AUC by model for each subgroup (Group Level)
     grp = (df.groupby(["Group", "Level"], as_index=False)
              .agg(PR_AUC_mean=("PR_AUC", "mean"),
                   n=("n", "first"),
                   Prevalence=("Prevalence", "first")))
-    # формируем подписи вида "gender:1", "year:2", ...
+    # we form the signatures of "gender:1", "year:2", ...
     grp["label"] = grp["Group"].astype(str) + ":" + grp["Level"].astype(str)
 
     fig = plt.figure(figsize=(11, 5))
     x = np.arange(len(grp))
     plt.bar(x, grp["PR_AUC_mean"].values)
-    # горизонтальная линия по средней распространённости (взвешивать по n необязательно)
+    # horizontal line on average
     if "Prevalence" in grp.columns and np.any(np.isfinite(grp["Prevalence"].values)):
         plt.axhline(float(np.nanmean(grp["Prevalence"].values)), linestyle="--", linewidth=1.2, label="Prevalence (avg)")
         plt.legend()
@@ -168,12 +166,11 @@ def main():
     ap.add_argument("--rq1_csv", default="artifacts/metrics/rq1_summary.csv")
     ap.add_argument("--rq2_pivot_csv", default="artifacts/interpretability/rq2_top5_pivot.csv")
     ap.add_argument("--rq3_tbl_csv", default="artifacts/interpretability/rq3_subgroups_table.csv")
-    ap.add_argument("--save", action="store_true", help="сохранять PNG в artifacts/figures")
+    ap.add_argument("--save", action="store_true", help="save PNG in artifacts/figures")
     args = ap.parse_args()
 
     outdir = pathlib.Path("artifacts/figures")
 
-    # откроем три отдельных окна; покажем все разом одной командой plt.show()
     figure_rq1(pathlib.Path(args.rq1_csv), args.save, outdir)
     figure_rq2(pathlib.Path(args.rq2_pivot_csv), args.save, outdir)
     figure_rq3(pathlib.Path(args.rq3_tbl_csv), args.save, outdir)

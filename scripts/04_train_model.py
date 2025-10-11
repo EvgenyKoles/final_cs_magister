@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-train_model
+train_models
 """
 
 import argparse, json, pathlib, warnings
