@@ -4,14 +4,14 @@
 
 Read:
   - RQ1:  artifacts/metrics/rq1_summary.csv
-  - RQ2:  artifacts/interpretability/rq2_top5_all_models.csv
-          artifacts/interpretability/rq2_top5_pivot.csv
+  - RQ2:  artifacts/interpretability/rq2_top5_all_models.csv (optional, not used here)
+          artifacts/interpretability/rq2_top5_pivot.csv  (or .cs fallback)
   - RQ3:  artifacts/interpretability/rq3_subgroups_table.csv
 
 Build
 1) RQ1 - grouped PR-AUC columns by models (VAL and TEST side by side).
-2) RQ2 - the consensus-top of features (Top-10 on the average rank between models).
-3) RQ3 is the average PR-AUC across all models for each subgroup (gender/year/employment level).
+2) RQ2 - HEATMAP of feature ranks across models (lower rank = more important).
+3) RQ3 - the average PR-AUC across all models for each subgroup (gender/year/employment level).
 
 Optionally saves PNG (--save) to artifacts/figures.
 """
@@ -20,11 +20,18 @@ import argparse, pathlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from matplotlib.colors import ListedColormap, BoundaryNorm
+from matplotlib.ticker import MaxNLocator
 
 # ---------- helpers ----------
 def _fallback(path: pathlib.Path) -> pathlib.Path:
+    """Small path fixer: supports minor typos and .cs -> .csv fallback."""
     s = str(path)
+    # handle .cs accidentally saved instead of .csv
+    if s.endswith(".cs") and not path.exists():
+        alt = pathlib.Path(s + "v")  # .csv
+        if alt.exists():
+            return alt
     if path.exists():
         return path
     if "interpretability" in s:
@@ -62,22 +69,28 @@ def _model_name(m):
     }
     return mapping.get(str(m), str(m))
 
+def _prettify_feature(name: str) -> str:
+    """Simple label cleanup for features."""
+    if name is None:
+        return "?"
+    return str(name).replace("_", " ").strip()
 
-# ---------- RQ1----------
+
+# ---------- RQ1 ----------
 def figure_rq1(rq1_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     rq1_csv = _fallback(rq1_csv)
     df = pd.read_csv(rq1_csv)
     df["Model"] = df["Model"].map(_model_name)
 
-    # order of models by TEST PR-AUC (if any), otherwise by VAL
+    # order models by TEST PR-AUC (if present), otherwise by VAL
     order = (df[df["Split"]=="TEST"]
              .sort_values("PR_AUC", ascending=False)["Model"].tolist())
     if not order:
         order = (df[df["Split"]=="VAL"]
                  .sort_values("PR_AUC", ascending=False)["Model"].tolist())
-    order = list(dict.fromkeys(order))  
+    order = list(dict.fromkeys(order))
 
-  # form matrix [x 2 splice models]
+    # form matrix [models x splits]
     models = order or sorted(df["Model"].unique())
     splits = ["VAL", "TEST"]
     mat = np.full((len(models), len(splits)), np.nan)
@@ -95,10 +108,12 @@ def figure_rq1(rq1_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     for j, s in enumerate(splits):
         xj = x + (j-0.5)*width
         plt.bar(xj, mat[:, j], width=width, label=s)
-    # the baseline of prevalence (we take a test, if any)
+
+    # draw prevalence baseline (prefer TEST if available)
     prev = prevalence.get("TEST") if np.isfinite(prevalence.get("TEST", np.nan)) else prevalence.get("VAL")
     if np.isfinite(prev):
         plt.axhline(prev, linestyle="--", linewidth=1.2, label=f"Prevalence={prev:.3f}")
+
     plt.xticks(x, models, rotation=20, ha="right")
     plt.ylabel("PR-AUC")
     plt.title("RQ1 — PR-AUC by model (VAL vs TEST)")
@@ -108,57 +123,227 @@ def figure_rq1(rq1_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
     return fig
 
 
-# ---------- RQ2 ----------
+# ---------- RQ2 (heatmap only) ----------
 def figure_rq2(pivot_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
+    """
+    Heatmap of feature ranks across models 
+    """
     pivot_csv = _fallback(pivot_csv)
     pv = pd.read_csv(pivot_csv)
-    #take all rank columns
+
+    # detect feature column
+    feat_col = None
+    for c in ["feature", "feature_resolved", "predictor", "name"]:
+        if c in pv.columns:
+            feat_col = c; break
+    if feat_col is None:
+        for c in pv.columns:
+            if pv[c].dtype == "object":
+                feat_col = c; break
+    if feat_col is None:
+        feat_col = pv.columns[0]
+
+    # detect rank columns
     rank_cols = [c for c in pv.columns if c.startswith("rank_")]
     if not rank_cols:
-        raise SystemExit("[RQ2] in pivot no columns rank_*")
-    pv["rank_mean"] = pv[rank_cols].mean(axis=1, skipna=True)
-    pv = pv.sort_values("rank_mean").head(10)
+        bad = {feat_col, "mean_rank", "rank_mean", "std_rank", "n_models"}
+        rank_cols = [c for c in pv.columns
+                     if c not in bad and np.issubdtype(pv[c].dtype, np.number)]
+    if not rank_cols:
+        raise SystemExit("[RQ2] No rank columns found (expect 'rank_*' or numeric rank columns).")
 
-    fig = plt.figure(figsize=(9, 5))
-    x = np.arange(len(pv))
-    plt.bar(x, pv["rank_mean"].values)
-    plt.xticks(x, pv["feature"].astype(str).tolist(), rotation=25, ha="right")
-    plt.ylabel("Mean rank across models (lower is better)")
-    plt.title("RQ2 — Consensus Top-10 features (by mean rank)")
+    # sort features by mean rank (lower is better)
+    pv["__mean_rank__"] = pv[rank_cols].mean(axis=1, skipna=True)
+    pv = pv.sort_values("__mean_rank__").drop(columns=["__mean_rank__"])
+
+    # pretty model names for x-axis
+    pretty_cols = {c: _model_name(c.replace("rank_", "")) for c in rank_cols}
+
+    # matrix for heatmap
+    heat = pv[[feat_col] + rank_cols].copy()
+    heat.columns = [feat_col] + [pretty_cols[c] for c in rank_cols]
+    heat = heat.set_index(feat_col)
+
+    # discrete colormap for ranks 1..5
+    colors = ["#1a9850", "#66bd63", "#fdae61", "#f46d43", "#d73027"]  # ranks 1..5
+    cmap = ListedColormap(colors)
+    cmap.set_bad(color="#eeeeee", alpha=1.0)  # NaN
+    cmap.set_over("#440154")                  # > 5 (colorbar)
+
+    bounds = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]   # bins for 1..5
+    norm = BoundaryNorm(bounds, cmap.N)
+
+    arr = heat.values.astype(float)
+
+    fig = plt.figure(figsize=(1.8 + 1.2*heat.shape[1], 0.8 + 0.45*heat.shape[0]))
+    # IMPORTANT: do NOT pass vmin/vmax together with norm
+    im = plt.imshow(arr, aspect="auto", interpolation="nearest", cmap=cmap, norm=norm)
+
+    # colorbar with discrete ticks 1..5
+    cbar = plt.colorbar(im, extend="max")
+    cbar.set_label("Rank (1 = best)")
+    cbar.set_ticks([1, 2, 3, 4, 5])
+    cbar.set_ticklabels(["1", "2", "3", "4", "5"])
+
+    # axes ticks/labels
+    plt.xticks(np.arange(heat.shape[1]), list(heat.columns), rotation=25, ha="right")
+    plt.yticks(np.arange(heat.shape[0]), [str(i).replace("_", " ") for i in heat.index])
+
+    # annotate ranks in cells
+    for i in range(heat.shape[0]):
+        for j in range(heat.shape[1]):
+            v = arr[i, j]
+            if np.isfinite(v):
+                txt = str(int(v)) if 0.5 < v < 99 else f"{v:.0f}"
+                kw = {"fontweight": "bold"} if v <= 3 else {}
+                plt.text(j, i, txt, ha="center", va="center", fontsize=9, **kw)
+
+    # light grid
+    ax = plt.gca()
+    ax.set_facecolor("white")
+    ax.set_xticks(np.arange(-0.5, heat.shape[1], 1), minor=True)
+    ax.set_yticks(np.arange(-0.5, heat.shape[0], 1), minor=True)
+    ax.grid(which="minor", color="white", linewidth=1.5)
+    ax.tick_params(which="minor", bottom=False, left=False)
+
+    plt.title("RQ2 — Feature rank heatmap across models (lower = better)")
     plt.tight_layout()
-    _savefig(save, outdir, "rq2_one_figure_consensus_top10.png")
+    _savefig(save, outdir, "rq2_rank_heatmap.png")
     return fig
-
 
 # ---------- RQ3 ----------
 def figure_rq3(tbl_csv: pathlib.Path, save: bool, outdir: pathlib.Path):
+    """
+    Panel view for RQ3:
+      - One subplot per subgroup (gender / year / employment).
+      - Bars: mean PR-AUC across models with SD error bars.
+      - Diamonds: prevalence per level; dashed line = global prevalence (n-weighted).
+      - Colored markers: per-model PR-AUC at each level (slight x-jitter).
+      - 'n=...' above bars; best model label above each bar (only when bar height is finite).
+    """
     tbl_csv = _fallback(tbl_csv)
     df = pd.read_csv(tbl_csv)
     needed = {"Group", "Level", "Model", "PR_AUC", "Prevalence", "n"}
     if not needed.issubset(df.columns):
         raise SystemExit(f"[RQ3] Not enough columns in {tbl_csv}")
 
-    # Average PR-AUC by model for each subgroup (Group Level)
-    grp = (df.groupby(["Group", "Level"], as_index=False)
+    # Pretty model names for legend
+    df["ModelPretty"] = df["Model"].map(_model_name)
+
+    # Aggregate across models
+    agg = (df.groupby(["Group", "Level"], as_index=False)
              .agg(PR_AUC_mean=("PR_AUC", "mean"),
+                  PR_AUC_std=("PR_AUC", "std"),
                   n=("n", "first"),
                   Prevalence=("Prevalence", "first")))
-    # we form the signatures of "gender:1", "year:2", ...
-    grp["label"] = grp["Group"].astype(str) + ":" + grp["Level"].astype(str)
+    agg["PR_AUC_std"] = agg["PR_AUC_std"].fillna(0.0)
 
-    fig = plt.figure(figsize=(11, 5))
-    x = np.arange(len(grp))
-    plt.bar(x, grp["PR_AUC_mean"].values)
-    # horizontal line on average
-    if "Prevalence" in grp.columns and np.any(np.isfinite(grp["Prevalence"].values)):
-        plt.axhline(float(np.nanmean(grp["Prevalence"].values)), linestyle="--", linewidth=1.2, label="Prevalence (avg)")
-        plt.legend()
-    plt.xticks(x, grp["label"].tolist(), rotation=45, ha="right")
-    plt.ylabel("PR-AUC (mean across models)")
-    plt.title("RQ3 — PR-AUC by subgroup (mean across models)")
-    plt.tight_layout()
-    _savefig(save, outdir, "rq3_one_figure_subgroups_mean_pr_auc.png")
+    # Global prevalence (n-weighted; fallback to nanmean)
+    try:
+        global_prev = float(np.average(agg["Prevalence"].values, weights=agg["n"].values))
+    except Exception:
+        global_prev = float(np.nanmean(agg["Prevalence"].values))
+
+    # Panel order
+    desired = ["gender", "year", "employment"]
+    groups_present = [g for g in desired if g in agg["Group"].unique()]
+    for g in agg["Group"].unique():
+        if g not in groups_present:
+            groups_present.append(g)
+    G = len(groups_present)
+    if G == 0:
+        raise SystemExit("[RQ3] No subgroup groups found.")
+
+    # Models & jitter for per-model points
+    models = sorted(df["ModelPretty"].dropna().unique().tolist())
+    jitters = np.linspace(-0.18, 0.18, num=max(1, len(models)))
+
+    fig, axes = plt.subplots(1, G, figsize=(4.6*G + 2, 5.0), sharey=True)
+    if G == 1:
+        axes = [axes]
+
+    # Safe ymax with NaN-tolerant maxima
+    try:
+        mm = float(np.nanmax(agg["PR_AUC_mean"].values))
+    except Exception:
+        mm = 0.2
+    try:
+        ss = float(np.nanmax(agg["PR_AUC_std"].values))
+    except Exception:
+        ss = 0.0
+    ymax = float(min(1.0, max(0.05, mm + ss + 0.1)))
+
+    for ax, g in zip(axes, groups_present):
+        sub = agg[agg["Group"] == g].copy()
+
+        # Natural level ordering
+        sub["_lvl_num"] = pd.to_numeric(sub["Level"], errors="coerce")
+        if sub["_lvl_num"].notna().all():
+            sub = sub.sort_values("_lvl_num")
+            xlabels = [str(int(v)) if float(v).is_integer() else str(v) for v in sub["_lvl_num"]]
+        else:
+            sub = sub.sort_values("Level")
+            xlabels = sub["Level"].astype(str).tolist()
+        sub = sub.drop(columns=["_lvl_num"])
+
+        x = np.arange(len(sub))
+
+        # Mean ± SD bars
+        ax.bar(x, sub["PR_AUC_mean"].values,
+               yerr=sub["PR_AUC_std"].values, capsize=3,
+               label=("PR-AUC mean ± SD" if ax is axes[0] else None))
+
+        # Per-level prevalence
+        ax.scatter(x, sub["Prevalence"].values, marker="D", s=40, color="black", alpha=0.75,
+                   label=("Prevalence (per level)" if ax is axes[0] else None))
+
+        # Global prevalence
+        if np.isfinite(global_prev):
+            ax.axhline(global_prev, ls="--", lw=1.2, color="tab:blue",
+                       label=("Prevalence (global)" if ax is axes[0] else None), alpha=0.7)
+
+        # Per-model points (align by level; small x-jitter)
+        sub_models = df[df["Group"] == g].copy()
+        sub_models["_order"] = pd.Categorical(sub_models["Level"], categories=sub["Level"], ordered=True)
+        sub_models.sort_values(["_order", "ModelPretty"], inplace=True)
+
+        for j, m in enumerate(models):
+            sm = sub_models[sub_models["ModelPretty"] == m]
+            yvals = []
+            for lvl in sub["Level"]:
+                row = sm[sm["Level"] == lvl]
+                yvals.append(float(row["PR_AUC"].mean()) if len(row) else np.nan)
+            ax.plot(x + jitters[j], yvals, marker="o", linestyle="None", ms=5,
+                    label=(m if ax is axes[0] else None), alpha=0.9)
+
+        # --- Annotations (only when bar height is finite) ---
+        for xi, yi, ni, lvl in zip(x, sub["PR_AUC_mean"].values, sub["n"].values, sub["Level"].values):
+            if np.isfinite(yi):
+                ax.text(xi, yi + 0.015, f"n={int(ni)}", ha="center", va="bottom", fontsize=9)
+                rows = sub_models[sub_models["Level"] == lvl]
+                vals = rows["PR_AUC"].astype(float)
+                if not rows.empty and vals.notna().any():
+                    idx = vals.fillna(-np.inf).idxmax()   # safe with NaNs
+                    best = str(rows.loc[idx, "ModelPretty"])
+                    ax.text(xi, yi + 0.06, best, ha="center", va="bottom", fontsize=9, color="dimgray")
+            else:
+                # Skip annotations to avoid "posx/posy should be finite values"
+                continue
+
+        ax.set_title(g)
+        ax.set_xticks(x)
+        ax.set_xticklabels(xlabels, rotation=0)
+        ax.set_ylim(0.0, ymax)
+        ax.grid(axis="y", linestyle=":", linewidth=0.8, alpha=0.6)
+
+    axes[0].set_ylabel("PR-AUC (mean across models)")
+    fig.suptitle("RQ3 — PR-AUC across demographic subgroups (mean ± SD across models)", y=0.98)
+    axes[0].legend(loc="upper left", frameon=True)  # single legend
+
+    fig.tight_layout(rect=[0, 0.02, 1, 0.95])
+    _savefig(save, outdir, "rq3_subgroups_pr_auc_panels.png")
     return fig
+
 
 
 def main():
@@ -172,7 +357,7 @@ def main():
     outdir = pathlib.Path("artifacts/figures")
 
     figure_rq1(pathlib.Path(args.rq1_csv), args.save, outdir)
-    figure_rq2(pathlib.Path(args.rq2_pivot_csv), args.save, outdir)
+    figure_rq2(pathlib.Path(args.rq2_pivot_csv), args.save, outdir)  # heatmap only
     figure_rq3(pathlib.Path(args.rq3_tbl_csv), args.save, outdir)
 
     plt.show()
